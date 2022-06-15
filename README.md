@@ -12,8 +12,8 @@
 
 ---
 ## terms
-* server : Support DB, User authentication.
-* lgdemo : Display information received from server.
+* server : Support DB, User authentication
+* lgdemo : Display information received from server
 
 ## commit message rule
 <pre>
