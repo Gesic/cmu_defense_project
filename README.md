@@ -7,6 +7,8 @@
 * source/ : project code
     * lgdemo/ : client code
     * server/ : server code
+	* common/ : common code
+	* DeviceEnumerator/ : DeviceEnumerator code
 
 ---
 ## terms
@@ -25,8 +27,7 @@ description
 example
 <pre>
 <code>
-[docs|server|client] Fix crash when resolve fail
-
+[docs|server|lgdemo] Fix crash when resolve fail
 when resolving failure is happened, the crash is happened because the
 </code>
 </pre>
