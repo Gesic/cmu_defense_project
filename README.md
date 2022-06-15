@@ -1,2 +1,32 @@
 # cmu_defense_project
-CMU project of team 5
+# cmu_project
+
+## folder
+* docs/ : project documents
+    * Need to update
+* source/ : project code
+    * lgdemo/ : client code
+    * server/ : server code
+
+---
+## terms
+* server : Support DB, User authentication.
+* lgdemo : Display information received from server.
+
+## commit message rule
+<pre>
+<code>
+[feature] title
+
+description
+</code>
+</pre>
+
+example
+<pre>
+<code>
+[docs|server|client] Fix crash when resolve fail
+
+when resolving failure is happened, the crash is happened because the
+</code>
+</pre>
