@@ -11,6 +11,12 @@
 #include "motiondetector.h"
 #include "alpr.h"
 #include "DeviceEnumerator.h"
+#include <atlstr.h>
+#include <strsafe.h>
+
+
+
+#define BUFFER_SIZE		1024 // 1K
 
 
 using namespace alpr;
@@ -59,12 +65,143 @@ static double CLOCK();
 static bool getconchar(KEY_EVENT_RECORD& krec);
 static double avgdur(double newdur);
 static double avgfps();
-static void GetResponses(void);
+static void GetResponses(HANDLE hPipe);
 /***********************************************************************************/
 /* Main                                                                            */
 /***********************************************************************************/
+
+HANDLE createdNamedPipe()
+{
+    HANDLE hPipe = nullptr;
+    // Prepare the pipe name
+    CString strPipeName;
+    strPipeName.Format(_T("\\\\%s\\pipe\\%s"),
+        _T("."),			// Server name
+        _T("IPC_DATA_CHANNEL")	// Pipe name
+    );
+
+  
+    while (TRUE)
+    {
+        hPipe = CreateFile(
+            strPipeName,			// Pipe name 
+            GENERIC_READ |			// Read and wrirte access 
+            GENERIC_WRITE,
+            0,						// No sharing 
+            NULL,					// Default security attributes
+            OPEN_EXISTING,			// Opens existing pipe 
+            0,						// Default attributes 
+            NULL);					// No template file 
+
+        // Break if the pipe handle is valid. 
+        if (hPipe != INVALID_HANDLE_VALUE)
+            break;
+
+        if (// Exit if an error other than ERROR_PIPE_BUSY occurs
+            GetLastError() != ERROR_PIPE_BUSY
+            ||
+            // All pipe instances are busy, so wait for 5 seconds
+            !WaitNamedPipe(strPipeName, 5000))
+        {
+            _tprintf(_T("Unable to open named pipe %s w/err 0x%08lx\n"),
+                strPipeName, GetLastError());
+           
+        }
+    }
+    _tprintf(_T("The named pipe, %s, is connected.\n"), strPipeName);
+
+    return hPipe;
+
+}
+bool writeMessage(HANDLE hPipe, CString temp)
+{
+    // Set data to be read from the pipe as a stream of messages
+    DWORD dwMode = PIPE_READMODE_MESSAGE;
+    BOOL bResult = SetNamedPipeHandleState(hPipe, &dwMode, NULL, NULL);
+    if (!bResult)
+    {
+        _tprintf(_T("SetNamedPipeHandleState failed w/err 0x%08lx\n"),
+            GetLastError());
+        return 1;
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+   // Send a message to the pipe server and receive its response.
+   // 
+
+   // A char buffer of BUFFER_SIZE chars, aka BUFFER_SIZE * sizeof(TCHAR) 
+   // bytes. The buffer should be big enough for ONE request to the server.
+
+    TCHAR chRequest[BUFFER_SIZE];	// Client -> Server
+    DWORD cbBytesWritten, cbRequestBytes;
+    TCHAR chReply[BUFFER_SIZE];		// Server -> Client
+    DWORD cbBytesRead, cbReplyBytes;
+
+
+    // Send one message to the pipe.
+    StringCchCopy(chRequest, BUFFER_SIZE, temp);
+    cbRequestBytes = sizeof(TCHAR) * (lstrlen(chRequest) + 1);
+
+    bResult = WriteFile(			// Write to the pipe.
+        hPipe,						// Handle of the pipe
+        chRequest,					// Message to be written
+        cbRequestBytes,				// Number of bytes to write
+        &cbBytesWritten,			// Number of bytes written
+        NULL);						// Not overlapped 
+
+    if (!bResult/*Failed*/ || cbRequestBytes != cbBytesWritten/*Failed*/)
+
+    {
+        _tprintf(_T("WriteFile failed w/err 0x%08lx\n"), GetLastError());
+        return 1;
+    }
+
+    _tprintf(_T("Sends %ld bytes; Message: \"%s\"\n"),
+        cbBytesWritten, chRequest);
+
+}
+
+std::wstring ExePath() {
+    TCHAR buffer[MAX_PATH] = { 0 };
+    GetModuleFileName(NULL, buffer, MAX_PATH);
+    std::wstring::size_type pos = std::wstring(buffer).find_last_of(L"\\/");
+    return std::wstring(buffer).substr(0, pos);
+}
+void executeProgram(CString fileName,bool bWait= FALSE)
+{
+    TCHAR programpath[_MAX_PATH];
+    wstring temp = ExePath();
+    /* GetModuleFileName(NULL, programpath, _MAX_PATH);
+     GetCurrentDirectory(_MAX_PATH, programpath);*/
+    const wchar_t* wcs = temp.c_str();
+
+    //ShellExecute(NULL, _T("open"), _T("server.exe"), NULL, NULL, SW_SHOW);
+    SHELLEXECUTEINFO ShExecInfo = { 0 };
+    ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+    ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+    ShExecInfo.hwnd = NULL;
+    ShExecInfo.lpVerb = NULL;
+    ShExecInfo.lpFile = fileName;
+    ShExecInfo.lpParameters = L"";
+    ShExecInfo.lpDirectory = wcs;
+    ShExecInfo.nShow = SW_SHOW;
+    ShExecInfo.hInstApp = NULL;
+    ShellExecuteEx(&ShExecInfo);
+    if (bWait)
+    {
+        WaitForSingleObject(ShExecInfo.hProcess, 2000);
+        CloseHandle(ShExecInfo.hProcess);
+    }
+   
+}
+
 int main()
 {
+   
+    executeProgram("server.exe");
+    executeProgram("collectData.exe", TRUE);
+    
+   
     Mode mode;
     VideoSaveMode videosavemode;
     VideoResolution vres;
@@ -80,9 +217,13 @@ int main()
     int apiID = cv::CAP_ANY;      // 0 = autodetect default API
 
     std::string county;
-
-
-    if ((TcpConnectedPort = OpenTcpConnection("192.168.56.1", "2222")) == NULL)
+    HANDLE hPipe = nullptr;
+    hPipe = createdNamedPipe();
+    /*if(hPipe != nullptr)
+        writeMessage(hPipe, "a/b/c/d/e");
+   */
+    
+    if ((TcpConnectedPort = OpenTcpConnection("127.0.0.1", "2222")) == NULL)
     {
         std::cout << "Connection Failed" << std::endl;
         return(-1);
@@ -195,7 +336,7 @@ int main()
         if (videosavemode != VideoSaveMode::vSaveWithNoALPR)
         {
             detectandshow(&alpr, frame, "", false);
-            GetResponses();
+            GetResponses(hPipe);
 
             cv::putText(frame, text,
                 cv::Point(10, frame.rows - 10), //top-left position
@@ -259,7 +400,7 @@ static bool detectandshow(Alpr* alpr, cv::Mat frame, std::string region, bool wr
     if (measureProcessingTime)
         std::cout << "Total Time to process image: " << totalProcessingTime << "ms." << std::endl;
 
-
+   
     if (writeJson)
     {
         std::cout << alpr->toJson(results) << std::endl;
@@ -280,6 +421,8 @@ static bool detectandshow(Alpr* alpr, cv::Mat frame, std::string region, bool wr
                 cv::Point(rect.x, rect.y-5), //top-left position
                 FONT_HERSHEY_COMPLEX_SMALL, 1,
                 Scalar(0, 255, 0), 0, LINE_AA, false);
+
+           
             if (TcpConnectedPort)
             {
                 bool found = false;
@@ -600,7 +743,7 @@ static VideoSaveMode GetVideoSaveMode(void)
 /***********************************************************************************/
 /* GetResponses                                                                    */
 /***********************************************************************************/
-static void GetResponses(void)
+static void GetResponses(HANDLE hPipe)
 {
  ssize_t BytesRead;
  ssize_t BytesOnSocket = 0;
@@ -625,11 +768,11 @@ static void GetResponses(void)
              GetResponseMode = ResponseMode::ReadingMsg;
              BytesNeeded = RespHdrNumBytes;
              BytesInResponseBuffer = 0;
-             printf("Response ReadingHeader\n");
          }
          else if (GetResponseMode == ResponseMode::ReadingMsg)
          {
              printf("Response %s\n", ResponseBuffer);
+             writeMessage(hPipe, ResponseBuffer);
              GetResponseMode = ResponseMode::ReadingHeader;
              BytesInResponseBuffer = 0;
              BytesNeeded = sizeof(RespHdrNumBytes);

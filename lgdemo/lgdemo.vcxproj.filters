@@ -15,13 +15,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="lgdemo.cpp">
+    <ClCompile Include="..\OpenCVDeviceEnumerator\DeviceEnumerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libs\libopenalpr\statedetection\featurematcher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="lgdemo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\libs\libopenalpr\statedetection\line_segment.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\NetworkTCP.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libs\libopenalpr\statedetection\state_detector.cpp">
@@ -30,18 +36,15 @@
     <ClCompile Include="..\libs\libopenalpr\statedetection\state_detector_impl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\OpenCVDeviceEnumerator\DeviceEnumerator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\NetworkTCP.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\OpenCVDeviceEnumerator\DeviceEnumerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\common\NetworkTCP.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lgdemo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

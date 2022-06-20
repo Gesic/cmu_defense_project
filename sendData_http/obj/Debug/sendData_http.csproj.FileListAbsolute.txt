@@ -1,0 +1,16 @@
+C:\pjt\Studio_Project_export\OpenAPLR-3.1.1_Vs2022\sendData_http\bin\Debug\sendData_http.exe.config
+C:\pjt\Studio_Project_export\OpenAPLR-3.1.1_Vs2022\sendData_http\bin\Debug\sendData_http.exe
+C:\pjt\Studio_Project_export\OpenAPLR-3.1.1_Vs2022\sendData_http\bin\Debug\sendData_http.pdb
+C:\pjt\Studio_Project_export\OpenAPLR-3.1.1_Vs2022\sendData_http\obj\Debug\sendData_http.csproj.AssemblyReference.cache
+C:\pjt\Studio_Project_export\OpenAPLR-3.1.1_Vs2022\sendData_http\obj\Debug\sendData_http.csproj.SuggestedBindingRedirects.cache
+C:\pjt\Studio_Project_export\OpenAPLR-3.1.1_Vs2022\sendData_http\obj\Debug\sendData_http.csproj.CoreCompileInputs.cache
+C:\pjt\Studio_Project_export\OpenAPLR-3.1.1_Vs2022\sendData_http\obj\Debug\sendData_http.exe
+C:\pjt\Studio_Project_export\OpenAPLR-3.1.1_Vs2022\sendData_http\obj\Debug\sendData_http.pdb
+D:\Git\cmu_defense_project\sendData_http\bin\Debug\sendData_http.exe.config
+D:\Git\cmu_defense_project\sendData_http\bin\Debug\sendData_http.exe
+D:\Git\cmu_defense_project\sendData_http\bin\Debug\sendData_http.pdb
+D:\Git\cmu_defense_project\sendData_http\obj\Debug\sendData_http.csproj.AssemblyReference.cache
+D:\Git\cmu_defense_project\sendData_http\obj\Debug\sendData_http.csproj.SuggestedBindingRedirects.cache
+D:\Git\cmu_defense_project\sendData_http\obj\Debug\sendData_http.csproj.CoreCompileInputs.cache
+D:\Git\cmu_defense_project\sendData_http\obj\Debug\sendData_http.exe
+D:\Git\cmu_defense_project\sendData_http\obj\Debug\sendData_http.pdb

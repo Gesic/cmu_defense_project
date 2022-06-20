@@ -38,7 +38,7 @@ for i in range(150):
   plate=fake.license_plate().replace(" ","")
   plate=plate.replace("-","")
   rnum=fake.pyint(1,100)
- output=plate+"\n"
+ output=+"\n"plate
  if rnum < 3:
   status="Owner Wanted"
  elif rnum <6: 

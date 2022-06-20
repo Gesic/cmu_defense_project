@@ -11,13 +11,13 @@ typedef int mode_t;
 #else
 #include <dirent.h>
 #include <unistd.h>
+
 #endif
 
 #include <stdint.h>
 #include <string>
 #include <sys/stat.h>
 #include <vector>
-
 namespace alpr
 {
 

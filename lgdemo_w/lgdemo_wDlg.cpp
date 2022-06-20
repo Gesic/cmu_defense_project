@@ -38,6 +38,10 @@
 #include <atlstr.h>
 #include <strsafe.h>
 
+//openssl
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
+#include <openssl/err.h>
 
 
 
@@ -76,6 +80,8 @@ char text[1024] = "";
 int frameno = 0;
 VideoCapture cap;
 VideoWriter outputVideo;
+int deviceID = -1;
+int apiID = cv::CAP_ANY;      // 0 = autodetect default API
 //
 bool measureProcessingTime = false;
 std::string templatePattern;
@@ -106,7 +112,7 @@ static double CLOCK();
 static bool getconchar(KEY_EVENT_RECORD& krec);
 static double avgdur(double newdur);
 static double avgfps();
-static void GetResponses();
+static void GetResponses(LPVOID param);
 /***********************************************************************************/
 /* Main                                                                            */
 /***********************************************************************************/
@@ -132,6 +138,8 @@ public:
 // 구현입니다.
 protected:
 	DECLARE_MESSAGE_MAP()
+public:
+   
 };
 
 CAboutDlg::CAboutDlg() : CDialogEx(IDD_ABOUTBOX)
@@ -157,6 +165,39 @@ ClgdemowDlg::ClgdemowDlg(CWnd* pParent /*=nullptr*/)
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
+std::wstring ExePath() {
+    TCHAR buffer[MAX_PATH] = { 0 };
+    GetModuleFileName(NULL, buffer, MAX_PATH);
+    std::wstring::size_type pos = std::wstring(buffer).find_last_of(L"\\/");
+    return std::wstring(buffer).substr(0, pos);
+}
+void executeProgram(CString fileName, bool bWait = FALSE)
+{
+    TCHAR programpath[_MAX_PATH];
+    wstring temp = ExePath();
+    /* GetModuleFileName(NULL, programpath, _MAX_PATH);
+     GetCurrentDirectory(_MAX_PATH, programpath);*/
+    const wchar_t* wcs = temp.c_str();
+
+    //ShellExecute(NULL, _T("open"), _T("server.exe"), NULL, NULL, SW_SHOW);
+    SHELLEXECUTEINFO ShExecInfo = { 0 };
+    ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+    ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+    ShExecInfo.hwnd = NULL;
+    ShExecInfo.lpVerb = NULL;
+    ShExecInfo.lpFile = fileName;
+    ShExecInfo.lpParameters = L"";
+    ShExecInfo.lpDirectory = wcs;
+    ShExecInfo.nShow = SW_SHOW;
+    ShExecInfo.hInstApp = NULL;
+    ShellExecuteEx(&ShExecInfo);
+    if (bWait)
+    {
+        WaitForSingleObject(ShExecInfo.hProcess, 2000);
+        CloseHandle(ShExecInfo.hProcess);
+    }
+
+}
 void ClgdemowDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
@@ -179,6 +220,7 @@ BEGIN_MESSAGE_MAP(ClgdemowDlg, CDialogEx)
 	ON_WM_CREATE()
     ON_WM_CLOSE()
     ON_BN_CLICKED(IDC_BUTTON3, &ClgdemowDlg::OnBnClickedButton_playback)
+    ON_BN_CLICKED(IDC_BUTTON2, &ClgdemowDlg::OnBnClickedButton_LiveCam)
 END_MESSAGE_MAP()
 
 
@@ -290,153 +332,18 @@ int ClgdemowDlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (CDialogEx::OnCreate(lpCreateStruct) == -1)
 		return -1;
 
-	// TODO:  여기에 특수화된 작성 코드를 추가합니다.
-    
-    int deviceID = -1;
-
-    int apiID = cv::CAP_ANY;      // 0 = autodetect default API
-
+    //executeProgram(L"server.exe");
+   
     
 
-   /* if ((TcpConnectedPort = OpenTcpConnection("127.0.0.1", "2222")) == NULL)
+    if ((TcpConnectedPort = OpenTcpConnection("127.0.0.1", "8000")) == NULL)
     {
         std::cout << "Connection Failed" << std::endl;
         return(-1);
     }
-    else std::cout << "Connected" << std::endl;*/
+    else std::cout << "Connected" << std::endl;
 
    
-    mode = Mode::mPlayback_Video;// GetVideoMode();
-    if (mode == Mode::mNone) exit(0);
-
-
-    if (mode == Mode::mLive_Video)
-    {
-        deviceID = 0;// GetVideoDevice();
-        if (deviceID == -1) exit(0);
-        vres = VideoResolution::r1280X720;//GetVideoResolution();
-        if (vres == VideoResolution::rNone) exit(0);
-    }
-    else
-    {
-        if (GetFileName(mode, filename)) std::cout << "Filename is " << filename << std::endl;
-        else exit(0);
-        vres = VideoResolution::r1280X720;// GetVideoResolution();
-        if (vres == VideoResolution::rNone) exit(0);
-    }
-
-    if (mode != Mode::mImage_File)
-    {
-        videosavemode = VideoSaveMode::vNoSave;//GetVideoSaveMode();
-        if (videosavemode == VideoSaveMode::vNone) exit(0);
-    }
-    else videosavemode = VideoSaveMode::vNoSave;
-
-    std::string county;
-    county = "us";
-
-    Alpr alpr(county, "");
-    alpr.setTopN(2);
-    if (alpr.isLoaded() == false)
-    {
-        std::cerr << "Error loading OpenALPR" << std::endl;
-        return 1;
-    }
-
-    if (mode == Mode::mLive_Video)
-    {
-        // open selected camera using selected API
-        cap.open(deviceID, apiID);
-        if (!cap.isOpened()) {
-            cout << "Error opening video stream" << endl;
-            return -1;
-        }
-    }
-    else if (mode == Mode::mPlayback_Video)
-    {
-        cap.open(filename);
-        if (!cap.isOpened()) {
-            cout << "Error opening video file" << endl;
-            return -1;
-        }
-    }
-
-    if (vres == VideoResolution::r1280X720)
-    {
-        cap.set(cv::CAP_PROP_FRAME_WIDTH, 1280);
-        cap.set(cv::CAP_PROP_FRAME_HEIGHT, 720);
-    }
-    else if (vres == VideoResolution::r640X480)
-    {
-        cap.set(cv::CAP_PROP_FRAME_WIDTH, 640);
-        cap.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
-    }
-    if (mode != Mode::mImage_File)
-    {
-        // Default resolutions of the frame are obtained.The default resolutions are system dependent.
-        int frame_width = (int)cap.get(cv::CAP_PROP_FRAME_WIDTH);
-        int frame_height = (int)cap.get(cv::CAP_PROP_FRAME_HEIGHT);
-        printf("Frame width= %d height=%d\n", frame_width, frame_height);
-
-
-        // Define the codec and create VideoWriter object.The output is stored in 'outcpp.avi' file.
-        if (videosavemode != VideoSaveMode::vNoSave)
-        {
-
-            outputVideo.open("output.avi", VideoWriter::fourcc('M', 'J', 'P', 'G'), 25, Size(frame_width, frame_height), true);
-            if (!outputVideo.isOpened())
-            {
-                cout << "Could not open the output video for write" << endl;
-                return -1;
-            }
-        }
-    }
-    //SetTimer(1000, 30, NULL);
-    //while (1) {
-
-    //    Mat frame;
-    //    double start = CLOCK();
-    //    // Capture frame-by-frame
-    //    if (mode == Mode::mImage_File)
-    //    {
-    //        frame = imread(filename);
-    //    }
-    //    else cap >> frame;
-
-    //    // 
-    //    // If the frame is empty, break immediately
-    //    if (frame.empty())
-    //        break;
-
-    //    if (frameno == 0) motiondetector.ResetMotionDetection(&frame);
-    //    if (videosavemode != VideoSaveMode::vSaveWithNoALPR)
-    //    {
-    //        detectandshow(&alpr, frame, "", false);
-    //        //GetResponses();
-
-    //        cv::putText(frame, text,
-    //            cv::Point(10, frame.rows - 10), //top-left position
-    //            FONT_HERSHEY_COMPLEX_SMALL, 0.5,
-    //            Scalar(0, 255, 0), 0, LINE_AA, false);
-
-    //    }
-
-    //    // Write the frame into the file 'outcpp.avi'
-    //    if (videosavemode != VideoSaveMode::vNoSave)
-    //    {
-    //        outputVideo.write(frame);
-    //    }
-
-    //    // Display the resulting frame    
-    //    imshow("Frame", frame);
-
-    //    // Press  ESC on keyboard to  exit
-    //    char c = (char)waitKey(1);
-    //    if (c == 27)
-    //        break;
-    //    double dur = CLOCK() - start;
-    //    sprintf_s(text, "avg time per frame %f ms. fps %f. frameno = %d", avgdur(dur), avgfps(), frameno++);
-    //}
 	return 0;
 }
 
@@ -813,8 +720,17 @@ static VideoSaveMode GetVideoSaveMode(void)
 /***********************************************************************************/
 /* GetResponses                                                                    */
 /***********************************************************************************/
-static void GetResponses()
+static const wchar_t* GetWC(const char* c)
 {
+    size_t cn;
+    const size_t cSize = strlen(c) + 1;
+    wchar_t* wc = new wchar_t[cSize];
+    mbstowcs_s(&cn,wc,cSize, c, cSize);
+    return wc;
+}
+static void GetResponses(LPVOID param)
+{
+    ClgdemowDlg* pMain = (ClgdemowDlg*)param;
     ssize_t BytesRead;
     ssize_t BytesOnSocket = 0;
     while ((BytesOnSocket = BytesAvailableTcp(TcpConnectedPort)) > 0)
@@ -841,6 +757,9 @@ static void GetResponses()
             }
             else if (GetResponseMode == ResponseMode::ReadingMsg)
             {
+             
+                pMain->AppendLineToMultilineEditCtrl(pMain->m_description, GetWC(ResponseBuffer));
+               
                 printf("Response %s\n", ResponseBuffer);
                 GetResponseMode = ResponseMode::ReadingHeader;
                 BytesInResponseBuffer = 0;
@@ -854,6 +773,7 @@ static void GetResponses()
         CloseTcpConnectedPort(&TcpConnectedPort);
     }
 }
+
 /***********************************************************************************/
 /* End GetResponses                                                                */
 /***********************************************************************************/
@@ -871,57 +791,10 @@ void ClgdemowDlg::OnClose()
 
     CDialogEx::OnClose();
 }
-//void ClgdemowDlg::DrawImage()
-//{
-//    CClientDC dc(GetDlgItem(IDC_PIC));
-//
-//    CRect rect;
-//    GetDlgItem(IDC_PIC)->GetClientRect(&rect);
-//
-//    SetStretchBltMode(dc.GetSafeHdc(), COLORONCOLOR);
-//    StretchDIBits(dc.GetSafeHdc(), 0, 0, rect.Width(), rect.Height(), 0, 0, m_matImage.cols, m_matImage.rows, m_matImage.data, m_pBitmapInfo, DIB_RGB_COLORS, SRCCOPY);
-//}
-void ClgdemowDlg::CreateBitmapInfo(int w, int h, int bpp)
+
+UINT ThreadForLiveCam(LPVOID param)
 {
-    if (m_pBitmapInfo != NULL)
-    {
-        delete m_pBitmapInfo;
-        m_pBitmapInfo = NULL;
-    }
-
-    if (bpp == 8)
-        m_pBitmapInfo = (BITMAPINFO*) new BYTE[sizeof(BITMAPINFO) + 255 * sizeof(RGBQUAD)];
-    else // 24 or 32bit
-        m_pBitmapInfo = (BITMAPINFO*) new BYTE[sizeof(BITMAPINFO)];
-
-    m_pBitmapInfo->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    m_pBitmapInfo->bmiHeader.biPlanes = 1;
-    m_pBitmapInfo->bmiHeader.biBitCount = bpp;
-    m_pBitmapInfo->bmiHeader.biCompression = BI_RGB;
-    m_pBitmapInfo->bmiHeader.biSizeImage = 0;
-    m_pBitmapInfo->bmiHeader.biXPelsPerMeter = 0;
-    m_pBitmapInfo->bmiHeader.biYPelsPerMeter = 0;
-    m_pBitmapInfo->bmiHeader.biClrUsed = 0;
-    m_pBitmapInfo->bmiHeader.biClrImportant = 0;
-
-    if (bpp == 8)
-    {
-        for (int i = 0; i < 256; i++)
-        {
-            m_pBitmapInfo->bmiColors[i].rgbBlue = (BYTE)i;
-            m_pBitmapInfo->bmiColors[i].rgbGreen = (BYTE)i;
-            m_pBitmapInfo->bmiColors[i].rgbRed = (BYTE)i;
-            m_pBitmapInfo->bmiColors[i].rgbReserved = 0;
-        }
-    }
-
-    m_pBitmapInfo->bmiHeader.biWidth = w;
-    m_pBitmapInfo->bmiHeader.biHeight = -h;
-}
-
-
-void ClgdemowDlg::OnBnClickedButton_playback()
-{
+    ClgdemowDlg* pMain = (ClgdemowDlg*)param;
     std::string county;
     county = "us";
 
@@ -930,11 +803,10 @@ void ClgdemowDlg::OnBnClickedButton_playback()
     if (alpr.isLoaded() == false)
     {
         std::cerr << "Error loading OpenALPR" << std::endl;
+        //return 1;
     }
-
-    // TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-    while (1) {
-
+    while (pMain->m_isWorkingThread_LiveCam)
+    {
         Mat frame;
         double start = CLOCK();
         // Capture frame-by-frame
@@ -953,7 +825,7 @@ void ClgdemowDlg::OnBnClickedButton_playback()
         if (videosavemode != VideoSaveMode::vSaveWithNoALPR)
         {
             detectandshow(&alpr, frame, "", false);
-            //GetResponses();
+            GetResponses(pMain);
 
             cv::putText(frame, text,
                 cv::Point(10, frame.rows - 10), //top-left position
@@ -970,7 +842,7 @@ void ClgdemowDlg::OnBnClickedButton_playback()
 
         // Display the resulting frame    
         //imshow("Frame", frame);
-        
+
         //cvtColor(frame, frame, COLOR_BGR2GRAY);
 
 
@@ -994,8 +866,6 @@ void ClgdemowDlg::OnBnClickedButton_playback()
             border = 4 - (frame.cols % 4);
         }
 
-
-
         Mat mat_temp;
         if (border > 0 || frame.isContinuous() == false)
         {
@@ -1007,13 +877,11 @@ void ClgdemowDlg::OnBnClickedButton_playback()
             mat_temp = frame;
         }
 
-
         RECT r;
-        m_PIC.GetClientRect(&r);
+        pMain->m_PIC.GetClientRect(&r);
         cv::Size winSize(r.right, r.bottom);
 
-        cimage_mfc.Create(winSize.width, winSize.height, 24);
-
+        pMain->cimage_mfc.Create(winSize.width, winSize.height, 24);
 
         BITMAPINFO* bitInfo = (BITMAPINFO*)malloc(sizeof(BITMAPINFO) + 256 * sizeof(RGBQUAD));
         bitInfo->bmiHeader.biBitCount = bpp;
@@ -1028,8 +896,6 @@ void ClgdemowDlg::OnBnClickedButton_playback()
         bitInfo->bmiHeader.biXPelsPerMeter = 0;
         bitInfo->bmiHeader.biYPelsPerMeter = 0;
 
-
-        //그레이스케일 인경우 팔레트가 필요
         if (bpp == 8)
         {
             RGBQUAD* palette = bitInfo->bmiColors;
@@ -1040,7 +906,6 @@ void ClgdemowDlg::OnBnClickedButton_playback()
             }
         }
 
-
         // Image is bigger or smaller than into destination rectangle
         // we use stretch in full rect
 
@@ -1050,7 +915,7 @@ void ClgdemowDlg::OnBnClickedButton_playback()
             // transfer memory block
             // NOTE: the padding border will be shown here. Anyway it will be max 3px width
 
-            SetDIBitsToDevice(cimage_mfc.GetDC(),
+            SetDIBitsToDevice(pMain->cimage_mfc.GetDC(),
                 //destination rectangle
                 0, 0, winSize.width, winSize.height,
                 0, 0, 0, mat_temp.rows,
@@ -1069,28 +934,276 @@ void ClgdemowDlg::OnBnClickedButton_playback()
             int imgWidth = mat_temp.cols - border;
             int imgHeight = mat_temp.rows;
 
-            StretchDIBits(cimage_mfc.GetDC(),
+            StretchDIBits(pMain->cimage_mfc.GetDC(),
                 destx, desty, destw, desth,
                 imgx, imgy, imgWidth, imgHeight,
                 mat_temp.data, bitInfo, DIB_RGB_COLORS, SRCCOPY);
         }
 
+        HDC dc = ::GetDC(pMain->m_PIC.m_hWnd);
+        pMain->cimage_mfc.BitBlt(dc, 0, 0);
+        ::ReleaseDC(pMain->m_PIC.m_hWnd, dc);
 
-        HDC dc = ::GetDC(m_PIC.m_hWnd);
-        cimage_mfc.BitBlt(dc, 0, 0);
+        pMain->cimage_mfc.ReleaseDC();
+        pMain->cimage_mfc.Destroy();
 
-
-        ::ReleaseDC(m_PIC.m_hWnd, dc);
-
-        cimage_mfc.ReleaseDC();
-        cimage_mfc.Destroy();
-
-        // Press  ESC on keyboard to  exit
-        char c = (char)waitKey(1);
-        if (c == 27)
-            break;
         double dur = CLOCK() - start;
         sprintf_s(text, "avg time per frame %f ms. fps %f. frameno = %d", avgdur(dur), avgfps(), frameno++);
+
     }
 
+    return 0;
 }
+
+
+UINT ThreadForPlayBack(LPVOID param)
+{
+    ClgdemowDlg* pMain = (ClgdemowDlg*)param;
+    std::string county;
+    county = "us";
+
+    Alpr alpr(county, "");
+    alpr.setTopN(2);
+    if (alpr.isLoaded() == false)
+    {
+        std::cerr << "Error loading OpenALPR" << std::endl;
+        //return 1;
+    }
+    while (pMain->m_isWorkingThread_playback)
+    {
+        Mat frame;
+        double start = CLOCK();
+        // Capture frame-by-frame
+        if (mode == Mode::mImage_File)
+        {
+            frame = imread(filename);
+        }
+        else cap >> frame;
+
+        // 
+        // If the frame is empty, break immediately
+        if (frame.empty())
+            break;
+
+        if (frameno == 0) motiondetector.ResetMotionDetection(&frame);
+        if (videosavemode != VideoSaveMode::vSaveWithNoALPR)
+        {
+            detectandshow(&alpr, frame, "", false);
+            GetResponses(pMain);
+
+            cv::putText(frame, text,
+                cv::Point(10, frame.rows - 10), //top-left position
+                FONT_HERSHEY_COMPLEX_SMALL, 0.5,
+                Scalar(0, 255, 0), 0, LINE_AA, false);
+
+        }
+
+        // Write the frame into the file 'outcpp.avi'
+        if (videosavemode != VideoSaveMode::vNoSave)
+        {
+            outputVideo.write(frame);
+        }
+
+        // Display the resulting frame    
+        //imshow("Frame", frame);
+
+        //cvtColor(frame, frame, COLOR_BGR2GRAY);
+
+
+
+        //화면에 보여주기 위한 처리입니다.
+        int bpp = 8 * frame.elemSize();
+        assert((bpp == 8 || bpp == 24 || bpp == 32));
+
+        int padding = 0;
+        //32 bit image is always DWORD aligned because each pixel requires 4 bytes
+        if (bpp < 32)
+            padding = 4 - (frame.cols % 4);
+
+        if (padding == 4)
+            padding = 0;
+
+        int border = 0;
+        //32 bit image is always DWORD aligned because each pixel requires 4 bytes
+        if (bpp < 32)
+        {
+            border = 4 - (frame.cols % 4);
+        }
+
+        Mat mat_temp;
+        if (border > 0 || frame.isContinuous() == false)
+        {
+            // Adding needed columns on the right (max 3 px)
+            cv::copyMakeBorder(frame, mat_temp, 0, 0, 0, border, cv::BORDER_CONSTANT, 0);
+        }
+        else
+        {
+            mat_temp = frame;
+        }
+
+        RECT r;
+        pMain->m_PIC.GetClientRect(&r);
+        cv::Size winSize(r.right, r.bottom);
+
+        pMain->cimage_mfc.Create(winSize.width, winSize.height, 24);
+
+        BITMAPINFO* bitInfo = (BITMAPINFO*)malloc(sizeof(BITMAPINFO) + 256 * sizeof(RGBQUAD));
+        bitInfo->bmiHeader.biBitCount = bpp;
+        bitInfo->bmiHeader.biWidth = mat_temp.cols;
+        bitInfo->bmiHeader.biHeight = -mat_temp.rows;
+        bitInfo->bmiHeader.biPlanes = 1;
+        bitInfo->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        bitInfo->bmiHeader.biCompression = BI_RGB;
+        bitInfo->bmiHeader.biClrImportant = 0;
+        bitInfo->bmiHeader.biClrUsed = 0;
+        bitInfo->bmiHeader.biSizeImage = 0;
+        bitInfo->bmiHeader.biXPelsPerMeter = 0;
+        bitInfo->bmiHeader.biYPelsPerMeter = 0;
+
+        if (bpp == 8)
+        {
+            RGBQUAD* palette = bitInfo->bmiColors;
+            for (int i = 0; i < 256; i++)
+            {
+                palette[i].rgbBlue = palette[i].rgbGreen = palette[i].rgbRed = (BYTE)i;
+                palette[i].rgbReserved = 0;
+            }
+        }
+
+        // Image is bigger or smaller than into destination rectangle
+        // we use stretch in full rect
+
+        if (mat_temp.cols == winSize.width && mat_temp.rows == winSize.height)
+        {
+            // source and destination have same size
+            // transfer memory block
+            // NOTE: the padding border will be shown here. Anyway it will be max 3px width
+
+            SetDIBitsToDevice(pMain->cimage_mfc.GetDC(),
+                //destination rectangle
+                0, 0, winSize.width, winSize.height,
+                0, 0, 0, mat_temp.rows,
+                mat_temp.data, bitInfo, DIB_RGB_COLORS);
+        }
+        else
+        {
+            // destination rectangle
+            int destx = 0, desty = 0;
+            int destw = winSize.width;
+            int desth = winSize.height;
+
+            // rectangle defined on source bitmap
+            // using imgWidth instead of mat_temp.cols will ignore the padding border
+            int imgx = 0, imgy = 0;
+            int imgWidth = mat_temp.cols - border;
+            int imgHeight = mat_temp.rows;
+
+            StretchDIBits(pMain->cimage_mfc.GetDC(),
+                destx, desty, destw, desth,
+                imgx, imgy, imgWidth, imgHeight,
+                mat_temp.data, bitInfo, DIB_RGB_COLORS, SRCCOPY);
+        }
+
+        HDC dc = ::GetDC(pMain->m_PIC.m_hWnd);
+        pMain->cimage_mfc.BitBlt(dc, 0, 0);
+        ::ReleaseDC(pMain->m_PIC.m_hWnd, dc);
+
+        pMain->cimage_mfc.ReleaseDC();
+        pMain->cimage_mfc.Destroy();
+       
+        double dur = CLOCK() - start;
+        sprintf_s(text, "avg time per frame %f ms. fps %f. frameno = %d", avgdur(dur), avgfps(), frameno++);
+
+    }
+
+    return 0;
+}
+
+void ClgdemowDlg::OnBnClickedButton_playback()
+{
+    mode = Mode::mPlayback_Video;
+    if (mode == Mode::mNone) exit(0);
+
+    if (GetFileName(mode, filename)) std::cout << "Filename is " << filename << std::endl;
+    else return;
+	vres = VideoResolution::r640X480;// GetVideoResolution();
+	if (vres == VideoResolution::rNone) exit(0);
+	videosavemode = VideoSaveMode::vNoSave;
+	cap.open(filename);
+	if (!cap.isOpened()) {
+		cout << "Error opening video file" << endl;
+		//return -1;
+	}
+    cap.set(cv::CAP_PROP_FRAME_WIDTH, 640);
+    cap.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
+    if (mode != Mode::mImage_File)
+    {
+        // Default resolutions of the frame are obtained.The default resolutions are system dependent.
+        int frame_width = (int)cap.get(cv::CAP_PROP_FRAME_WIDTH);
+        int frame_height = (int)cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+        printf("Frame width= %d height=%d\n", frame_width, frame_height);
+       
+    }
+    //Thread Running 
+    m_isWorkingThread_playback = true;
+    m_isWorkingThread_LiveCam = false;
+    m_pThread_playback = AfxBeginThread(ThreadForPlayBack, this);
+}
+
+void ClgdemowDlg::AppendTextToEditCtrl(CEdit& edit, LPCTSTR pszText)
+{
+    // get the initial text length
+    int nLength = edit.GetWindowTextLength();
+    // put the selection at the end of text
+    edit.SetSel(nLength, nLength);
+    // replace the selection
+    edit.ReplaceSel(pszText);
+}
+void ClgdemowDlg::AppendLineToMultilineEditCtrl(CEdit& edit, LPCTSTR pszText)
+{
+    CString strLine;
+    // add CR/LF to text
+    strLine.Format(_T("\r\n%s"), pszText);
+    AppendTextToEditCtrl(edit, strLine);
+}
+void ClgdemowDlg::OnBnClickedButton_LiveCam()
+{
+    
+
+    mode = Mode::mLive_Video;
+	if (mode == Mode::mNone) exit(0);
+
+
+
+    deviceID = 0;
+	if (deviceID == -1) exit(0);
+    vres = VideoResolution::r640X480;
+	if (vres == VideoResolution::rNone) exit(0);
+
+	videosavemode = VideoSaveMode::vNoSave;
+	// open selected camera using selected API
+	cap.open(deviceID, apiID);
+	if (!cap.isOpened()) {
+		cout << "Error opening video stream" << endl;
+
+	}
+	cap.set(cv::CAP_PROP_FRAME_WIDTH, 640);
+	cap.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
+
+
+	if (mode != Mode::mImage_File)
+	{
+		// Default resolutions of the frame are obtained.The default resolutions are system dependent.
+		int frame_width = (int)cap.get(cv::CAP_PROP_FRAME_WIDTH);
+		int frame_height = (int)cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+		printf("Frame width= %d height=%d\n", frame_width, frame_height);
+
+	}
+	//Thread Running 
+    m_isWorkingThread_playback = false;
+	m_isWorkingThread_LiveCam = true;
+	m_pThread_playback = AfxBeginThread(ThreadForLiveCam, this);
+
+}
+
+

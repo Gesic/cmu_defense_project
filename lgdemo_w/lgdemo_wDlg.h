@@ -38,6 +38,12 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
+	void AppendTextToEditCtrl(CEdit& edit, LPCTSTR pszText);
+	void AppendLineToMultilineEditCtrl(CEdit& edit, LPCTSTR pszText);
+	CWinThread* m_pThread_playback;
+	bool m_isWorkingThread_playback = FALSE;
+	CWinThread* m_pThread_LiveCam = FALSE; 
+	bool m_isWorkingThread_LiveCam;
 	CImage cimage_mfc;
 	CStatic m_picture;
 	CStatic m_Pic;
@@ -53,4 +59,5 @@ public:
 	CEdit m_description;
 	afx_msg void OnClose();
 	afx_msg void OnBnClickedButton_playback();
+	afx_msg void OnBnClickedButton_LiveCam();
 };
