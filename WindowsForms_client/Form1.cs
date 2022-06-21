@@ -12,6 +12,8 @@ using System.IO.Pipes;
 using System.IO;
 using System.Security.AccessControl;
 using System.Threading;
+using System.Diagnostics;
+
 namespace WindowsForms_client
 {
    
@@ -19,7 +21,11 @@ namespace WindowsForms_client
     {
         [DllImport("kernel32.dll", EntryPoint = "AllocConsole", SetLastError = true, CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
         private static extern int AllocConsole();
-      
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool MoveWindow(IntPtr hwnd, int x, int y, int cx, int cy, bool repaint);
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
+
 
         const int BUFFER_SIZE = 4096;  // 4 KB
 
@@ -37,9 +43,24 @@ namespace WindowsForms_client
             Thread producer = new Thread(new ThreadStart(listenToSNMP));
             producer.Start();
             //producer.Join();   // Join both threads with no timeout
-            
+
             //string[] temp = { "1", "2" ,"3", "4", "5", "6", "7", "8", "9", "10", "11"};
             //dataGridView1.Rows.Add(temp);
+            var process = new Process();
+            process.StartInfo.FileName = "lgdemo_w.exe";
+            //process.StartInfo.Arguments = "/?";
+            process.StartInfo.WorkingDirectory = System.Windows.Forms.Application.StartupPath;
+            process.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
+            if(File.Exists(Path.Combine(process.StartInfo.WorkingDirectory, "lgdemo_w.exe")))
+            {
+                process.Start();
+                IntPtr ptr = IntPtr.Zero;
+                while ((ptr = process.MainWindowHandle) == IntPtr.Zero) ;
+                SetParent(process.MainWindowHandle, panel1.Handle);
+                MoveWindow(process.MainWindowHandle, 0, 0, panel1.Width, panel1.Height, true);
+            }
+               
+
 
         }
         void listenToSNMP()

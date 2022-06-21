@@ -9,16 +9,16 @@ namespace sendData_http
     {
         static void Main(string[] args)
         {
-            string url = "http://127.0.0.1:8000/rest_api_test/";
+            string url = "http://192.168.246.26:8080/testJSON";
             var request = (HttpWebRequest)WebRequest.Create(url);
 
             string response = string.Empty;
-            string data = "{ \"id\": \"101\", \"name\" : \"Alex\" }";
+            string data = "{ \"id\": \"user\", \"plateNum\": \"LBV6157\" }";
 
             //// request setting
 
             request.Method = "POST";
-            request.Headers.Add("X-CSRFToken", "hg8IWiQkLdI3VQO11L4daMgsyPezyoOidripNTGnOn1jFZrLj97cByeqvIIPqX22"); // 헤더 추가 방법
+            //request.Headers.Add("X-CSRFToken", "hg8IWiQkLdI3VQO11L4daMgsyPezyoOidripNTGnOn1jFZrLj97cByeqvIIPqX22"); // 헤더 추가 방법
             request.ContentType = "application/json";
             request.Timeout = 10 * 1000;
             //request.ContentType = "application/x-www-form-urlencoded";
