@@ -69,6 +69,10 @@ char ResponseBuffer[2048];
 unsigned int BytesInResponseBuffer = 0;
 ssize_t BytesNeeded = sizeof(RespHdrNumBytes);
 
+//IPC
+HANDLE m_hPipe = nullptr;
+
+
 //ADD OpenCV
 Mode mode;
 VideoSaveMode videosavemode;
@@ -170,6 +174,96 @@ std::wstring ExePath() {
     GetModuleFileName(NULL, buffer, MAX_PATH);
     std::wstring::size_type pos = std::wstring(buffer).find_last_of(L"\\/");
     return std::wstring(buffer).substr(0, pos);
+}
+HANDLE createdNamedPipe()
+{
+    HANDLE hPipe = nullptr;
+    // Prepare the pipe name
+    CString strPipeName;
+    strPipeName.Format(_T("\\\\%s\\pipe\\%s"),
+        _T("."),			// Server name
+        _T("IPC_DATA_CHANNEL")	// Pipe name
+    );
+
+
+    while (TRUE)
+    {
+        hPipe = CreateFile(
+            strPipeName,			// Pipe name 
+            GENERIC_READ |			// Read and wrirte access 
+            GENERIC_WRITE,
+            0,						// No sharing 
+            NULL,					// Default security attributes
+            OPEN_EXISTING,			// Opens existing pipe 
+            0,						// Default attributes 
+            NULL);					// No template file 
+
+        // Break if the pipe handle is valid. 
+        if (hPipe != INVALID_HANDLE_VALUE)
+            break;
+
+        if (// Exit if an error other than ERROR_PIPE_BUSY occurs
+            GetLastError() != ERROR_PIPE_BUSY
+            ||
+            // All pipe instances are busy, so wait for 5 seconds
+            !WaitNamedPipe(strPipeName, 5000))
+        {
+            _tprintf(_T("Unable to open named pipe %s w/err 0x%08lx\n"),
+                strPipeName, GetLastError());
+
+        }
+    }
+    _tprintf(_T("The named pipe, %s, is connected.\n"), strPipeName);
+
+    return hPipe;
+
+}
+bool writeMessage(HANDLE hPipe, CString temp)
+{
+    // Set data to be read from the pipe as a stream of messages
+    DWORD dwMode = PIPE_READMODE_MESSAGE;
+    BOOL bResult = SetNamedPipeHandleState(hPipe, &dwMode, NULL, NULL);
+    if (!bResult)
+    {
+        _tprintf(_T("SetNamedPipeHandleState failed w/err 0x%08lx\n"),
+            GetLastError());
+        return 1;
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+   // Send a message to the pipe server and receive its response.
+   // 
+
+   // A char buffer of BUFFER_SIZE chars, aka BUFFER_SIZE * sizeof(TCHAR) 
+   // bytes. The buffer should be big enough for ONE request to the server.
+
+    TCHAR chRequest[BUFFER_SIZE];	// Client -> Server
+    DWORD cbBytesWritten, cbRequestBytes;
+    TCHAR chReply[BUFFER_SIZE];		// Server -> Client
+    DWORD cbBytesRead, cbReplyBytes;
+
+
+    // Send one message to the pipe.
+    StringCchCopy(chRequest, BUFFER_SIZE, temp);
+    cbRequestBytes = sizeof(TCHAR) * (lstrlen(chRequest) + 1);
+
+    bResult = WriteFile(			// Write to the pipe.
+        hPipe,						// Handle of the pipe
+        chRequest,					// Message to be written
+        cbRequestBytes,				// Number of bytes to write
+        &cbBytesWritten,			// Number of bytes written
+        NULL);						// Not overlapped 
+
+    if (!bResult/*Failed*/ || cbRequestBytes != cbBytesWritten/*Failed*/)
+
+    {
+        _tprintf(_T("WriteFile failed w/err 0x%08lx\n"), GetLastError());
+        return 1;
+    }
+
+    _tprintf(_T("Sends %ld bytes; Message: \"%s\"\n"),
+        cbBytesWritten, chRequest);
+
 }
 void executeProgram(CString fileName, bool bWait = FALSE)
 {
@@ -331,7 +425,7 @@ int ClgdemowDlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	if (CDialogEx::OnCreate(lpCreateStruct) == -1)
 		return -1;
-
+    m_hPipe = createdNamedPipe();
     //executeProgram(L"server.exe");
    
     

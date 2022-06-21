@@ -79,6 +79,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lgdemo_w", "lgdemo_w\lgdemo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sendData_http", "sendData_http\sendData_http.csproj", "{A87DBE68-47D6-4B9D-A3C6-9FA528BC53AC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsForms_client", "WindowsForms_client\WindowsForms_client.csproj", "{B4C5E03D-9128-41F8-8B70-C43AFA1FCC56}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -293,6 +295,18 @@ Global
 		{A87DBE68-47D6-4B9D-A3C6-9FA528BC53AC}.Release|x64.Build.0 = Release|Any CPU
 		{A87DBE68-47D6-4B9D-A3C6-9FA528BC53AC}.Release|x86.ActiveCfg = Release|Any CPU
 		{A87DBE68-47D6-4B9D-A3C6-9FA528BC53AC}.Release|x86.Build.0 = Release|Any CPU
+		{B4C5E03D-9128-41F8-8B70-C43AFA1FCC56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4C5E03D-9128-41F8-8B70-C43AFA1FCC56}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4C5E03D-9128-41F8-8B70-C43AFA1FCC56}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B4C5E03D-9128-41F8-8B70-C43AFA1FCC56}.Debug|x64.Build.0 = Debug|Any CPU
+		{B4C5E03D-9128-41F8-8B70-C43AFA1FCC56}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B4C5E03D-9128-41F8-8B70-C43AFA1FCC56}.Debug|x86.Build.0 = Debug|Any CPU
+		{B4C5E03D-9128-41F8-8B70-C43AFA1FCC56}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4C5E03D-9128-41F8-8B70-C43AFA1FCC56}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4C5E03D-9128-41F8-8B70-C43AFA1FCC56}.Release|x64.ActiveCfg = Release|Any CPU
+		{B4C5E03D-9128-41F8-8B70-C43AFA1FCC56}.Release|x64.Build.0 = Release|Any CPU
+		{B4C5E03D-9128-41F8-8B70-C43AFA1FCC56}.Release|x86.ActiveCfg = Release|Any CPU
+		{B4C5E03D-9128-41F8-8B70-C43AFA1FCC56}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
