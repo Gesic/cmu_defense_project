@@ -297,12 +297,11 @@ void ClgdemowDlg::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 
 	DDX_Control(pDX, IDC_PIC, m_PIC);
-	DDX_Control(pDX, IDC_EDIT1, m_TXT_ID);
-	DDX_Control(pDX, IDC_EDIT2, m_TXT_PW);
-	DDX_Control(pDX, IDC_BUTTON1, btn_LogIn);
+	
+	
 	DDX_Control(pDX, IDC_BUTTON3, Btn_playback);
 	DDX_Control(pDX, IDC_BUTTON2, Btn_LiveCam);
-	DDX_Control(pDX, IDC_EDIT3, m_description);
+
 }
 
 BEGIN_MESSAGE_MAP(ClgdemowDlg, CDialogEx)
@@ -425,15 +424,16 @@ int ClgdemowDlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	if (CDialogEx::OnCreate(lpCreateStruct) == -1)
 		return -1;
+    //executeProgram(L"collectData.exe",TRUE);
     m_hPipe = createdNamedPipe();
-    //executeProgram(L"server.exe");
+    executeProgram(L"server.exe",TRUE);
    
     
 
-    if ((TcpConnectedPort = OpenTcpConnection("127.0.0.1", "8000")) == NULL)
+    if ((TcpConnectedPort = OpenTcpConnection("127.0.0.1", "2222")) == NULL)
     {
         std::cout << "Connection Failed" << std::endl;
-        return(-1);
+        return(0);
     }
     else std::cout << "Connected" << std::endl;
 
@@ -852,9 +852,10 @@ static void GetResponses(LPVOID param)
             else if (GetResponseMode == ResponseMode::ReadingMsg)
             {
              
-                pMain->AppendLineToMultilineEditCtrl(pMain->m_description, GetWC(ResponseBuffer));
+                //pMain->AppendLineToMultilineEditCtrl(pMain->m_description, GetWC(ResponseBuffer));
                
                 printf("Response %s\n", ResponseBuffer);
+                writeMessage(m_hPipe, GetWC(ResponseBuffer));
                 GetResponseMode = ResponseMode::ReadingHeader;
                 BytesInResponseBuffer = 0;
                 BytesNeeded = sizeof(RespHdrNumBytes);
