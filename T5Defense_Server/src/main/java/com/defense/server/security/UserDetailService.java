@@ -1,4 +1,4 @@
-package com.defense.server.jwt.config;
+package com.defense.server.security;
 
 import com.defense.server.entity.Users;
 import com.defense.server.repository.UserRepository;
@@ -20,7 +20,7 @@ public class UserDetailService implements UserDetailsService {
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		Users users = userRepository.findUserByUserId(username);
+		Users users = userRepository.findUserByUserid(username);
 		if (users == null) {
 			throw new UsernameNotFoundException("UsernameNotFound [" + username + "]");
 		}

@@ -13,22 +13,22 @@ import java.time.LocalDateTime;
 public class Users {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "user_key", length = 50, nullable = false)
-	private Long userKey;
+	@Column(name = "userkey", length = 50, nullable = true)
+	private Long userkey;
 
-	@Column(name = "user_id", length = 50, nullable = false, unique = true)
-	private String userId;
+	@Column(name = "userid", length = 50, nullable = true, unique = true)
+	private String userid;
 
-	@Column(name = "user_name", length = 50, nullable = false)
-	private String userName;
+	@Column(name = "username", length = 50, nullable = true)
+	private String username;
 
-	@Column(name = "password", length = 100, nullable = false)
+	@Column(name = "password", length = 100, nullable = true)
 	private String password;
 
-	@Column(name = "role", length = 20, nullable = false)
+	@Column(name = "role", length = 20, nullable = true)
 	private String role;
 
-	@Column(name = "reg_date")
+	@Column(name = "regdate")
 	private LocalDateTime regDate;
 
 }

@@ -37,16 +37,16 @@ public class MainController {
 	@RequestMapping(value = "/testJSON", method = RequestMethod.POST)
 	public List<Plateinfo> getResultJSON(@RequestBody Map<String, Object> recvInfo, Model model) {
 		List<Plateinfo> result = this.plateNumberService.getQueryForPlateNumJSON(recvInfo.get("plateNum").toString());
+		System.out.println(result.toString());
 		return result;
 	}
 
-//	@RequestMapping(value = "/test", method = RequestMethod.POST)
-//	public String getResult(@RequestBody Map<String, Object> recvInfo, Model model) {
-//		System.out.println("A : "+ recvInfo.get("id"));
-//		System.out.println("B : "+ recvInfo.get("plateNum").toString());
-//		String result = this.plateNumberService.getQueryForPlateNum(recvInfo.get("plateNum").toString());
-//		model.addAttribute("RESULT", result);
-//		return "result";
-//	}
+	@ResponseBody
+	@RequestMapping(value = "/test", method = RequestMethod.POST)
+	public String getResult(@RequestBody Map<String, Object> recvInfo, Model model) {
+		String result = this.plateNumberService.getQueryForPlateNum(recvInfo.get("plateNum").toString());
+		model.addAttribute("RESULT", result);
+		return result;
+	}
 
 }

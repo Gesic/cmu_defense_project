@@ -1,4 +1,4 @@
-package com.defense.server.jwt.config;
+package com.defense.server.security;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -22,7 +22,7 @@ public class LoginUser implements UserDetails {
 	private List<String> roles;
 
 	public LoginUser(Users users) {
-		this.username = users.getUserId();
+		this.username = users.getUserid();
 		this.password = users.getPassword();
 		this.role = users.getRole();
 	}

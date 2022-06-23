@@ -21,7 +21,7 @@ public class JWTController {
 	public ResultJson hello(HttpServletRequest request) {
 		ResultJson resultJson = new ResultJson();
 		resultJson.setCode(ResultCode.SUCCESS.getCode());
-		resultJson.setMsg("Hello, " + request.getSession().getAttribute("userId").toString());
+		resultJson.setMsg("Hello, " + request.getSession().getAttribute("userid").toString());
 		return resultJson;
 	}
 
