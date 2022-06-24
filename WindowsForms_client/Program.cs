@@ -14,9 +14,21 @@ namespace WindowsForms_client
         [STAThread]
         static void Main()
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            bool flagMutex;
+
+            System.Threading.Mutex m_hMutex = new System.Threading.Mutex(true, "ALPR Client", out flagMutex);
+            if (flagMutex)
+            {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                Application.Run(new MainFrm());
+            }
+            else
+            {
+                Environment.Exit(0);
+             
+            }
+            
         }
     }
 }

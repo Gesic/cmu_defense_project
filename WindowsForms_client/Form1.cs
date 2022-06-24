@@ -13,11 +13,22 @@ using System.IO;
 using System.Security.AccessControl;
 using System.Threading;
 using System.Diagnostics;
+using System.Net;
+using System.Net.Security;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
+using System.Net.Sockets;
+using System.Net.Http;
 
 namespace WindowsForms_client
 {
-   
-    public partial class Form1 : Form
+
+    enum postFuncType
+    {
+        Auth,
+        Plate
+    };
+    public partial class MainFrm : Form
     {
         [DllImport("kernel32.dll", EntryPoint = "AllocConsole", SetLastError = true, CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
         private static extern int AllocConsole();
@@ -26,42 +37,173 @@ namespace WindowsForms_client
         [DllImport("user32.dll", SetLastError = true)]
         static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
 
-
+        WebRequestHandler clientHandler;
+        Thread producer;
         const int BUFFER_SIZE = 4096;  // 4 KB
+        const string serverURL = "https://10.58.6.244:8443/test/";
+        //const string serverURL = "http://10.58.6.244:8080/db/";
 
-            
-        public Form1()
+        //https://10.58.6.244:8443/db  
+        //https://10.58.6.244:8080/db
+        class ResponseAPI
         {
+            public string id { get; set; }
+            public string plateNum { get; set; }
+
+        }
+
+        public MainFrm()
+        {
+            
             InitializeComponent();
             this.Location = new Point(0, 0);
             //AllocConsole();
             this.dataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         }
-
-        private void Form1_Load(object sender, EventArgs e)
+        private Task<HttpResponseMessage> HttpComm()
         {
-            Thread producer = new Thread(new ThreadStart(listenToSNMP));
+            HttpClient _httpClient = new HttpClient(clientHandler);
+            _httpClient.Timeout = new TimeSpan(0, 0, 5);
+            _httpClient.BaseAddress = new Uri(serverURL);
+            _httpClient.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+            var request = new
+            {
+                id = "user",
+                plateNum = "LBV6157",
+
+            };
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls12;
+            //ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+            var response = _httpClient.PostAsJsonAsync(_httpClient.BaseAddress, request).Result;
+            var contents = response.Content.ReadAsStringAsync();
+            TXT_DESC.AppendText(contents.Result.ToString());
+            string[] infos = contents.Result.Split('\n');
+            if (infos.Length > 0)
+            {
+                dataGridView1.Rows.Add(infos);
+
+            }
+
+            //var testResult = response.Content.ReadAsAsync<ResponseAPI>().Result;
+            return Task.FromResult(response);
+        }
+        private void addCertification()
+        {
+            
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            clientHandler = new WebRequestHandler();
+            string crt = Path.Combine(System.Windows.Forms.Application.StartupPath, "client.pfx");
+            X509Certificate2 modCert = new X509Certificate2(crt, "qwe123..");
+            X509Store store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
+           
+            store.Open(OpenFlags.ReadWrite);
+            store.Add(modCert);
+
+         
+            clientHandler.ClientCertificates.Add(modCert);
+            clientHandler.AuthenticationLevel = System.Net.Security.AuthenticationLevel.MutualAuthRequested;
+            clientHandler.ClientCertificateOptions = ClientCertificateOption.Manual;
+            //httpClient = gcnew HttpClient(clientHandler);
+            //HttpContent ^ httpContent = gcnew ByteArrayContent(state->postBody);
+            //httpContent->Headers->ContentType = gcnew MediaTypeHeaderValue("application/octet-stream");
+            //resultTask = httpClient->PostAsync(state->httpRequest, httpContent);
+
+            
+        }
+        private async void Form1_Load(object sender, EventArgs e)
+        {
+            addCertification();
+            await HttpComm();
+            producer = new Thread(new ThreadStart(listenToSNMP));
             producer.Start();
             //producer.Join();   // Join both threads with no timeout
+        
+           
 
-            //string[] temp = { "1", "2" ,"3", "4", "5", "6", "7", "8", "9", "10", "11"};
-            //dataGridView1.Rows.Add(temp);
-            var process = new Process();
-            process.StartInfo.FileName = "lgdemo_w.exe";
-            //process.StartInfo.Arguments = "/?";
-            process.StartInfo.WorkingDirectory = System.Windows.Forms.Application.StartupPath;
-            process.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
-            if(File.Exists(Path.Combine(process.StartInfo.WorkingDirectory, "lgdemo_w.exe")))
+        }
+        private async void postdata(postFuncType type, string plateNum = null)
+        {
+            try
             {
-                process.Start();
-                IntPtr ptr = IntPtr.Zero;
-                while ((ptr = process.MainWindowHandle) == IntPtr.Zero) ;
-                SetParent(process.MainWindowHandle, panel1.Handle);
-                MoveWindow(process.MainWindowHandle, 0, 0, panel1.Width, panel1.Height, true);
+                var request = (HttpWebRequest)WebRequest.Create(serverURL);
+                request.ContentType = "application/json";
+                string response = string.Empty;
+                request.Credentials = CredentialCache.DefaultCredentials;
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls12;
+                ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+                string data = null;
+                if (type == postFuncType.Auth)
+                {
+                    data = "{ \"id\": \"user\", \"plateNum\": \"LBV6157\" }";
+                }
+                else if (type == postFuncType.Plate)
+                {
+                    data = string.Format("\"id\": \"user\", \"plateNum\": \"{0}\"", plateNum);
+                    data = "{" + data + "}";
+                    //data = "{ \"id\": \"user\", \"plateNum\": \"LBV615\" }";
+                }
+                else
+                {
+                    data = "{ \"id\": \"user\", \"plateNum\": \"LBV6157\" }";
+                }
+
+                // request setting
+                request.Method = "POST";
+                request.ContentType = "application/json";
+                request.Timeout = 300;
+                //request.ContentType = "application/x-www-form-urlencoded";
+                //request.Headers.Add("Authorization", "BASIC SGVsbG8=");
+
+                // Data Stream setting
+                byte[] bytes = Encoding.ASCII.GetBytes(data);
+                request.ContentLength = bytes.Length;
+
+                // POST Request
+                using (Stream reqStream = request.GetRequestStream())
+                {
+                    reqStream.Write(bytes, 0, bytes.Length);
+                }
+
+                // Response
+                string responseText = string.Empty;
+                using (HttpWebResponse res = (HttpWebResponse)request.GetResponse())
+                {
+                    HttpStatusCode status = res.StatusCode;
+                    if (status == HttpStatusCode.OK)
+                    {
+                        Stream response_stream = res.GetResponseStream();
+                        using (StreamReader read_stream = new StreamReader(response_stream))
+                        {
+                            response = read_stream.ReadToEnd();
+                        }
+                        this.Invoke(new Action(delegate ()
+                        {
+                            TXT_DESC.AppendText(response);
+                            if(!response.Contains("@@@@"))
+                            {
+                                string[] infos = response.Split('\n');
+                                if (infos.Length > 0)
+                                {
+                                    dataGridView1.Rows.Add(infos);
+
+                                }
+                            }
+                     
+                           
+                        }));
+                    }
+
+                }
+
+                Console.WriteLine(response);
             }
-               
+            catch(Exception ex)
+            {
 
+            }
 
+            
+            
         }
         void listenToSNMP()
         {
@@ -152,6 +294,8 @@ namespace WindowsForms_client
 
                 if (!bResult/*Failed*/ || cbBytesRead == 0/*Finished*/)
                 {
+                    producer.Abort();
+                    Application.ExitThread();
                     Environment.Exit(0);
                 }
                     
@@ -161,16 +305,31 @@ namespace WindowsForms_client
                 strMessage = Encoding.Unicode.GetString(bRequest).TrimEnd('\0');
                 Console.WriteLine("Receives {0} bytes; Message: \"{1}\"",
                     cbBytesRead, strMessage);
-                string[] temp = strMessage.Split('\n');
-                if(temp.Length > 0)
-                    dataGridView1.Rows.Add(temp);
+                string[] platenum = strMessage.Split('\n');
+                if(platenum.Length > 0)
+                {
+                    this.Invoke(new Action(delegate () 
+                    {
+                        if (platenum.Length == 1)
+                        {
+                            //TXT_DESC.AppendText("Plate Number: " + temp[0] + Environment.NewLine);
+                            if (platenum[0].Length > 4)
+                                postdata(postFuncType.Plate, platenum[0]);
+                        }
+                            
+                        else
+                            dataGridView1.Rows.Add(platenum);
+                    }));
+           
+                }
+                  
 
             }
 
             PipeNative.FlushFileBuffers(hPipe);
             PipeNative.DisconnectNamedPipe(hPipe);
             PipeNative.CloseHandle(hPipe);
-            Console.ReadKey();
+            //Console.ReadKey();
         }
 
       
@@ -235,7 +394,16 @@ namespace WindowsForms_client
         }
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
+          
+            Application.ExitThread();
+            Process[] processList = Process.GetProcessesByName("lgdemo_w");
+
+            if (processList.Length > 0)
+            {
+                processList[0].Kill();
+            }
             Environment.Exit(0);
+           
         }
 
         private void menuToolStripMenuItem_DropDownItemClicked(object sender, ToolStripItemClickedEventArgs e)
@@ -245,6 +413,34 @@ namespace WindowsForms_client
 
             menuToolStripMenuItem.HideDropDown();
             
+        }
+
+        private void BTN_LOGIN_Click(object sender, EventArgs e)
+        {
+            //string[] temp = { "1", "2" ,"3", "4", "5", "6", "7", "8", "9", "10", "11"};
+            //dataGridView1.Rows.Add(temp);
+            using (var process = new Process())
+            {
+                process.StartInfo.FileName = "lgdemo_w.exe";
+                //process.StartInfo.Arguments = "/?";
+                process.StartInfo.WorkingDirectory = System.Windows.Forms.Application.StartupPath;
+                process.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
+                if (File.Exists(Path.Combine(process.StartInfo.WorkingDirectory, "lgdemo_w.exe")))
+                {
+                    process.Start();
+                    IntPtr ptr = IntPtr.Zero;
+                    while ((ptr = process.MainWindowHandle) == IntPtr.Zero) ;
+                    SetParent(process.MainWindowHandle, panel1.Handle);
+                    MoveWindow(process.MainWindowHandle, 0, 0, panel1.Width, panel1.Height, true);
+                }
+            }
+
+        }
+
+        private void MainFrm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            producer.Abort();
+           
         }
     }
 }

@@ -89,6 +89,7 @@
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>C:\Program Files\OpenSSL-Win64\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Program Files\OpenSSL-Win64\lib\VC;$(LibraryPath)</LibraryPath>
+    <OutDir>..\WindowsForms_client\bin\Debug</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

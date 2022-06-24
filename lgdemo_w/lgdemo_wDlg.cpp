@@ -426,22 +426,30 @@ int ClgdemowDlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
     //executeProgram(L"collectData.exe",TRUE);
     m_hPipe = createdNamedPipe();
-    executeProgram(L"server.exe",TRUE);
+   
+    /*executeProgram(L"server.exe",TRUE);
    
     
-
+    
     if ((TcpConnectedPort = OpenTcpConnection("127.0.0.1", "2222")) == NULL)
     {
         std::cout << "Connection Failed" << std::endl;
         return(0);
     }
-    else std::cout << "Connected" << std::endl;
+    else std::cout << "Connected" << std::endl;*/
 
    
 	return 0;
 }
 
-
+static const wchar_t* GetWC(const char* c)
+{
+    size_t cn;
+    const size_t cSize = strlen(c) + 1;
+    wchar_t* wc = new wchar_t[cSize];
+    mbstowcs_s(&cn, wc, cSize, c, cSize);
+    return wc;
+}
 
 
 /***********************************************************************************/
@@ -494,7 +502,7 @@ static bool detectandshow(Alpr* alpr, cv::Mat frame, std::string region, bool wr
                 Scalar(0, 255, 0), 0, LINE_AA, false);
 
 
-            if (TcpConnectedPort)
+            if (m_hPipe)
             {
                 bool found = false;
                 for (int x = 0; x < NUMBEROFPREVIOUSPLATES; x++)
@@ -510,11 +518,12 @@ static bool detectandshow(Alpr* alpr, cv::Mat frame, std::string region, bool wr
                     unsigned short SendMsgHdr;
                     SendPlateStringLength = (unsigned short)strlen(results.plates[i].bestPlate.characters.c_str()) + 1;
                     SendMsgHdr = htons(SendPlateStringLength);
-                    if ((result = (int)WriteDataTcp(TcpConnectedPort, (unsigned char*)&SendMsgHdr, sizeof(SendMsgHdr))) != sizeof(SendPlateStringLength))
+                  /*  if ((result = (int)WriteDataTcp(TcpConnectedPort, (unsigned char*)&SendMsgHdr, sizeof(SendMsgHdr))) != sizeof(SendPlateStringLength))
                         printf("WriteDataTcp %d\n", result);
                     if ((result = (int)WriteDataTcp(TcpConnectedPort, (unsigned char*)results.plates[i].bestPlate.characters.c_str(), SendPlateStringLength)) != SendPlateStringLength)
-                        printf("WriteDataTcp %d\n", result);
+                        printf("WriteDataTcp %d\n", result);*/
                     printf("sent ->%s\n", results.plates[i].bestPlate.characters.c_str());
+                    writeMessage(m_hPipe, GetWC(results.plates[i].bestPlate.characters.c_str()));
                 }
             }
             strcpy_s(LastPlates[CurrentPlate], results.plates[i].bestPlate.characters.c_str());
@@ -814,14 +823,7 @@ static VideoSaveMode GetVideoSaveMode(void)
 /***********************************************************************************/
 /* GetResponses                                                                    */
 /***********************************************************************************/
-static const wchar_t* GetWC(const char* c)
-{
-    size_t cn;
-    const size_t cSize = strlen(c) + 1;
-    wchar_t* wc = new wchar_t[cSize];
-    mbstowcs_s(&cn,wc,cSize, c, cSize);
-    return wc;
-}
+
 static void GetResponses(LPVOID param)
 {
     ClgdemowDlg* pMain = (ClgdemowDlg*)param;
@@ -920,7 +922,7 @@ UINT ThreadForLiveCam(LPVOID param)
         if (videosavemode != VideoSaveMode::vSaveWithNoALPR)
         {
             detectandshow(&alpr, frame, "", false);
-            GetResponses(pMain);
+            //GetResponses(pMain);
 
             cv::putText(frame, text,
                 cv::Point(10, frame.rows - 10), //top-left position
@@ -1084,7 +1086,7 @@ UINT ThreadForPlayBack(LPVOID param)
         if (videosavemode != VideoSaveMode::vSaveWithNoALPR)
         {
             detectandshow(&alpr, frame, "", false);
-            GetResponses(pMain);
+            //GetResponses(pMain);
 
             cv::putText(frame, text,
                 cv::Point(10, frame.rows - 10), //top-left position

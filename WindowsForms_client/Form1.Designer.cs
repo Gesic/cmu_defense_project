@@ -1,6 +1,6 @@
 ﻿namespace WindowsForms_client
 {
-    partial class Form1
+    partial class MainFrm
     {
         /// <summary>
         /// 필수 디자이너 변수입니다.
@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainFrm));
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
             this.LPN = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Status = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -37,20 +38,30 @@
             this.OSA = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.OC = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.VM = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.VMM = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.VModel = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.VC = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.menuToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.logoutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.BTN_LOGIN = new System.Windows.Forms.Button();
+            this.TXT_PW = new System.Windows.Forms.TextBox();
+            this.TXT_ID = new System.Windows.Forms.TextBox();
+            this.label3 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
+            this.label1 = new System.Windows.Forms.Label();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.TXT_DESC = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.menuStrip1.SuspendLayout();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // dataGridView1
             // 
             this.dataGridView1.AllowUserToAddRows = false;
+            this.dataGridView1.AllowUserToDeleteRows = false;
             this.dataGridView1.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridView1.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.LPN,
@@ -61,147 +72,177 @@
             this.OSA,
             this.OC,
             this.VM,
-            this.VMM,
             this.VModel,
             this.VC});
-            this.dataGridView1.Location = new System.Drawing.Point(0, 685);
-            this.dataGridView1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            resources.ApplyResources(this.dataGridView1, "dataGridView1");
             this.dataGridView1.Name = "dataGridView1";
-            this.dataGridView1.RowHeadersWidth = 51;
+            this.dataGridView1.ReadOnly = true;
             this.dataGridView1.RowTemplate.Height = 27;
-            this.dataGridView1.Size = new System.Drawing.Size(1035, 244);
-            this.dataGridView1.TabIndex = 0;
             // 
             // LPN
             // 
-            this.LPN.HeaderText = "License Plate Numbeer";
-            this.LPN.MinimumWidth = 6;
+            resources.ApplyResources(this.LPN, "LPN");
             this.LPN.Name = "LPN";
-            this.LPN.Width = 125;
+            this.LPN.ReadOnly = true;
             // 
             // Status
             // 
-            this.Status.HeaderText = "Status";
-            this.Status.MinimumWidth = 6;
+            resources.ApplyResources(this.Status, "Status");
             this.Status.Name = "Status";
-            this.Status.Width = 125;
+            this.Status.ReadOnly = true;
             // 
             // RE
             // 
-            this.RE.HeaderText = "Registeration Expiration";
-            this.RE.MinimumWidth = 6;
+            resources.ApplyResources(this.RE, "RE");
             this.RE.Name = "RE";
-            this.RE.Width = 125;
+            this.RE.ReadOnly = true;
             // 
             // ON
             // 
-            this.ON.HeaderText = "Owner Name";
-            this.ON.MinimumWidth = 6;
+            resources.ApplyResources(this.ON, "ON");
             this.ON.Name = "ON";
-            this.ON.Width = 125;
+            this.ON.ReadOnly = true;
             // 
             // ODB
             // 
-            this.ODB.HeaderText = "Owner Birth Date";
-            this.ODB.MinimumWidth = 6;
+            resources.ApplyResources(this.ODB, "ODB");
             this.ODB.Name = "ODB";
-            this.ODB.Width = 125;
+            this.ODB.ReadOnly = true;
             // 
             // OSA
             // 
-            this.OSA.HeaderText = "Location";
-            this.OSA.MinimumWidth = 6;
+            resources.ApplyResources(this.OSA, "OSA");
             this.OSA.Name = "OSA";
-            this.OSA.Width = 125;
+            this.OSA.ReadOnly = true;
             // 
             // OC
             // 
-            this.OC.HeaderText = "Owner City";
-            this.OC.MinimumWidth = 6;
+            resources.ApplyResources(this.OC, "OC");
             this.OC.Name = "OC";
-            this.OC.Width = 125;
+            this.OC.ReadOnly = true;
             // 
             // VM
             // 
-            this.VM.HeaderText = "Vehicle Manufacturer";
-            this.VM.MinimumWidth = 6;
+            resources.ApplyResources(this.VM, "VM");
             this.VM.Name = "VM";
-            this.VM.Width = 125;
-            // 
-            // VMM
-            // 
-            this.VMM.HeaderText = "Make";
-            this.VMM.MinimumWidth = 6;
-            this.VMM.Name = "VMM";
-            this.VMM.Width = 125;
+            this.VM.ReadOnly = true;
             // 
             // VModel
             // 
-            this.VModel.HeaderText = "Model";
-            this.VModel.MinimumWidth = 6;
+            resources.ApplyResources(this.VModel, "VModel");
             this.VModel.Name = "VModel";
-            this.VModel.Width = 125;
+            this.VModel.ReadOnly = true;
             // 
             // VC
             // 
-            this.VC.HeaderText = "Color";
-            this.VC.MinimumWidth = 6;
+            resources.ApplyResources(this.VC, "VC");
             this.VC.Name = "VC";
-            this.VC.Width = 125;
+            this.VC.ReadOnly = true;
             // 
             // menuStrip1
             // 
             this.menuStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.menuToolStripMenuItem});
-            this.menuStrip1.Location = new System.Drawing.Point(0, 0);
+            resources.ApplyResources(this.menuStrip1, "menuStrip1");
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Padding = new System.Windows.Forms.Padding(5, 2, 0, 2);
-            this.menuStrip1.Size = new System.Drawing.Size(1047, 24);
-            this.menuStrip1.TabIndex = 1;
-            this.menuStrip1.Text = "menuStrip1";
             // 
             // menuToolStripMenuItem
             // 
             this.menuToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.saveToolStripMenuItem});
+            this.saveToolStripMenuItem,
+            this.logoutToolStripMenuItem});
             this.menuToolStripMenuItem.Name = "menuToolStripMenuItem";
-            this.menuToolStripMenuItem.Size = new System.Drawing.Size(50, 20);
-            this.menuToolStripMenuItem.Text = "Menu";
+            resources.ApplyResources(this.menuToolStripMenuItem, "menuToolStripMenuItem");
             this.menuToolStripMenuItem.DropDownItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.menuToolStripMenuItem_DropDownItemClicked);
             // 
             // saveToolStripMenuItem
             // 
             this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
-            this.saveToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.S)));
-            this.saveToolStripMenuItem.Size = new System.Drawing.Size(140, 22);
-            this.saveToolStripMenuItem.Text = "Save";
+            resources.ApplyResources(this.saveToolStripMenuItem, "saveToolStripMenuItem");
+            // 
+            // logoutToolStripMenuItem
+            // 
+            this.logoutToolStripMenuItem.Name = "logoutToolStripMenuItem";
+            resources.ApplyResources(this.logoutToolStripMenuItem, "logoutToolStripMenuItem");
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.BTN_LOGIN);
+            this.groupBox1.Controls.Add(this.TXT_PW);
+            this.groupBox1.Controls.Add(this.TXT_ID);
+            this.groupBox1.Controls.Add(this.label3);
+            this.groupBox1.Controls.Add(this.label2);
+            resources.ApplyResources(this.groupBox1, "groupBox1");
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.TabStop = false;
+            // 
+            // BTN_LOGIN
+            // 
+            resources.ApplyResources(this.BTN_LOGIN, "BTN_LOGIN");
+            this.BTN_LOGIN.Name = "BTN_LOGIN";
+            this.BTN_LOGIN.UseVisualStyleBackColor = true;
+            this.BTN_LOGIN.Click += new System.EventHandler(this.BTN_LOGIN_Click);
+            // 
+            // TXT_PW
+            // 
+            resources.ApplyResources(this.TXT_PW, "TXT_PW");
+            this.TXT_PW.Name = "TXT_PW";
+            // 
+            // TXT_ID
+            // 
+            resources.ApplyResources(this.TXT_ID, "TXT_ID");
+            this.TXT_ID.Name = "TXT_ID";
+            // 
+            // label3
+            // 
+            resources.ApplyResources(this.label3, "label3");
+            this.label3.Name = "label3";
+            // 
+            // label2
+            // 
+            resources.ApplyResources(this.label2, "label2");
+            this.label2.Name = "label2";
+            // 
+            // label1
+            // 
+            resources.ApplyResources(this.label1, "label1");
+            this.label1.Name = "label1";
             // 
             // panel1
             // 
-            this.panel1.Location = new System.Drawing.Point(329, 27);
+            this.panel1.BackgroundImage = global::WindowsForms_client.Properties.Resources.internet_lock_locked_padlock_password_secure_security_icon_127100;
+            resources.ApplyResources(this.panel1, "panel1");
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(704, 653);
-            this.panel1.TabIndex = 2;
             // 
-            // Form1
+            // TXT_DESC
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1047, 940);
+            resources.ApplyResources(this.TXT_DESC, "TXT_DESC");
+            this.TXT_DESC.Name = "TXT_DESC";
+            // 
+            // MainFrm
+            // 
+            resources.ApplyResources(this, "$this");
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            this.Controls.Add(this.TXT_DESC);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.dataGridView1);
             this.Controls.Add(this.menuStrip1);
+            this.DoubleBuffered = true;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MainMenuStrip = this.menuStrip1;
-            this.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.Name = "Form1";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
-            this.Text = "Detection List";
+            this.MaximizeBox = false;
+            this.Name = "MainFrm";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainFrm_FormClosing);
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Form1_FormClosed);
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -210,6 +251,19 @@
         #endregion
 
         private System.Windows.Forms.DataGridView dataGridView1;
+        private System.Windows.Forms.MenuStrip menuStrip1;
+        private System.Windows.Forms.ToolStripMenuItem menuToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem saveToolStripMenuItem;
+        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.Button BTN_LOGIN;
+        private System.Windows.Forms.TextBox TXT_PW;
+        private System.Windows.Forms.TextBox TXT_ID;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.TextBox TXT_DESC;
+        private System.Windows.Forms.ToolStripMenuItem logoutToolStripMenuItem;
         private System.Windows.Forms.DataGridViewTextBoxColumn LPN;
         private System.Windows.Forms.DataGridViewTextBoxColumn Status;
         private System.Windows.Forms.DataGridViewTextBoxColumn RE;
@@ -218,13 +272,8 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn OSA;
         private System.Windows.Forms.DataGridViewTextBoxColumn OC;
         private System.Windows.Forms.DataGridViewTextBoxColumn VM;
-        private System.Windows.Forms.DataGridViewTextBoxColumn VMM;
         private System.Windows.Forms.DataGridViewTextBoxColumn VModel;
         private System.Windows.Forms.DataGridViewTextBoxColumn VC;
-        private System.Windows.Forms.MenuStrip menuStrip1;
-        private System.Windows.Forms.ToolStripMenuItem menuToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem saveToolStripMenuItem;
-        private System.Windows.Forms.Panel panel1;
     }
 }
 
