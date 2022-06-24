@@ -1,10 +1,16 @@
 package com.defense.server.entity;
 
+import java.time.LocalDateTime;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
 import lombok.Getter;
 import lombok.Setter;
-
-import javax.persistence.*;
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -31,4 +37,12 @@ public class Users {
 	@Column(name = "regdate")
 	private LocalDateTime regDate;
 
+	@Column(name = "email", length = 20, nullable = true)
+	private String email;
+
+	@Column(name = "otpKey", length = 10, nullable = true)
+	public int otpKey;
+
+	@Column(name = "check2ndauth", length = 20, nullable = true)
+	private String check2ndauth;
 }

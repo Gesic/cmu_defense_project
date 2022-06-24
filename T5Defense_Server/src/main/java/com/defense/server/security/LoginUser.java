@@ -24,7 +24,7 @@ public class LoginUser implements UserDetails {
 	public LoginUser(Users users) {
 		this.username = users.getUserid();
 		this.password = users.getPassword();
-		this.role = users.getRole();
+//		this.role = users.getRole();
 	}
 
 	@Override
