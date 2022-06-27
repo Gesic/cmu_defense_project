@@ -19,6 +19,9 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Net.Sockets;
 using System.Net.Http;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Security.Cryptography;
 
 namespace WindowsForms_client
 {
@@ -26,7 +29,8 @@ namespace WindowsForms_client
     enum postFuncType
     {
         Auth,
-        Plate
+        Plate,
+        OTPReqeust
     };
     public partial class MainFrm : Form
     {
@@ -39,10 +43,14 @@ namespace WindowsForms_client
 
         WebRequestHandler clientHandler;
         Thread producer;
+        string tokenVal = null;
         const int BUFFER_SIZE = 4096;  // 4 KB
-        const string serverURL = "https://10.58.6.244:8443/test/";
+        const string serverURL = "http://localhost:8080";
         //const string serverURL = "http://10.58.6.244:8080/db/";
-
+        Form2 otpInput = null;
+        public string receivedOTPNumber;
+        System.Windows.Forms.Timer loginWating = null;
+        bool bLoginPASS = false;
         //https://10.58.6.244:8443/db  
         //https://10.58.6.244:8080/db
         class ResponseAPI
@@ -51,29 +59,79 @@ namespace WindowsForms_client
             public string plateNum { get; set; }
 
         }
-
-        public MainFrm()
+        public class receivedJSON
+        {
+            public string code;
+            public string msg;
+            public string token;
+           
+        }
+        class Hash
+        {
+            public static string getHashSha256(string text)
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(text);
+                SHA256Managed hashstring = new SHA256Managed();
+                byte[] hash = hashstring.ComputeHash(bytes);
+                string hashString = string.Empty;
+                foreach (byte x in hash)
+                {
+                    hashString += String.Format("{0:x2}", x);
+                }
+                return hashString;
+            }
+        }
+            public MainFrm()
         {
             
             InitializeComponent();
+            loginWating = new System.Windows.Forms.Timer();
+            loginWating.Tick += LoginWating_Tick;
+            loginWating.Interval = 50;
             this.Location = new Point(0, 0);
             //AllocConsole();
             this.dataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         }
+
+        private void LoginWating_Tick(object sender, EventArgs e)
+        {
+            progressBar1.Increment(1);
+            if (progressBar1.Value >= progressBar1.Maximum)
+                loginWating.Stop();
+            
+        }
+
         private Task<HttpResponseMessage> HttpComm()
         {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            clientHandler = new WebRequestHandler();
+            string crt = Path.Combine(System.Windows.Forms.Application.StartupPath, "client.pfx");
+            X509Certificate2 modCert = new X509Certificate2(crt, "qwe123..");
+            //X509Certificate2 modCert = new X509Certificate2(crt, "woonge");
+            X509Store store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
+
+            store.Open(OpenFlags.ReadWrite);
+            store.Add(modCert);
+
+
+            clientHandler.ClientCertificates.Add(modCert);
+            clientHandler.AuthenticationLevel = System.Net.Security.AuthenticationLevel.MutualAuthRequested;
+            clientHandler.ClientCertificateOptions = ClientCertificateOption.Manual;
+            //clientHandler.Credentials = CredentialCache.DefaultNetworkCredentials;
+            string serverURL1 = "https://10.58.2.60:8443/db";
+            ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
             HttpClient _httpClient = new HttpClient(clientHandler);
             _httpClient.Timeout = new TimeSpan(0, 0, 5);
-            _httpClient.BaseAddress = new Uri(serverURL);
+            _httpClient.BaseAddress = new Uri(serverURL1);
             _httpClient.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
             var request = new
             {
-                id = "user",
-                plateNum = "LBV6157",
+                userid = "aaa",
+                password = "123456",
 
             };
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls12;
-            //ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+           
+            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var response = _httpClient.PostAsJsonAsync(_httpClient.BaseAddress, request).Result;
             var contents = response.Content.ReadAsStringAsync();
             TXT_DESC.AppendText(contents.Result.ToString());
@@ -101,7 +159,7 @@ namespace WindowsForms_client
 
          
             clientHandler.ClientCertificates.Add(modCert);
-            clientHandler.AuthenticationLevel = System.Net.Security.AuthenticationLevel.MutualAuthRequested;
+            clientHandler.AuthenticationLevel = System.Net.Security.AuthenticationLevel.MutualAuthRequired;
             clientHandler.ClientCertificateOptions = ClientCertificateOption.Manual;
             //httpClient = gcnew HttpClient(clientHandler);
             //HttpContent ^ httpContent = gcnew ByteArrayContent(state->postBody);
@@ -112,20 +170,45 @@ namespace WindowsForms_client
         }
         private async void Form1_Load(object sender, EventArgs e)
         {
-            addCertification();
-            await HttpComm();
+            HttpComm();
+            //addCertification();
+            //try
+            //{
+            //    await HttpComm();
+            //}
+            //catch(Exception ex)
+            //{
+            //    MessageBox.Show(ex.ToString());
+
+            //}
+
             producer = new Thread(new ThreadStart(listenToSNMP));
             producer.Start();
             //producer.Join();   // Join both threads with no timeout
-        
-           
 
         }
-        private async void postdata(postFuncType type, string plateNum = null)
+        private bool postdata(postFuncType type, string plateNum = null, string userid =null, string password=null,int timeout=300 ,string optNum = null)
         {
+
+            bool result = false;
+            string urlAddress = serverURL;
             try
             {
-                var request = (HttpWebRequest)WebRequest.Create(serverURL);
+                switch(type)
+                {
+                    case postFuncType.Auth:
+                        urlAddress += "/auth/login";
+                        break;
+                    case postFuncType.Plate:
+                        urlAddress += "/db";
+                        break;
+                    case postFuncType.OTPReqeust:
+                        urlAddress += "/auth/otp-check";
+                        break;
+                    default:
+                        break;
+                }
+                var request = (HttpWebRequest)WebRequest.Create(urlAddress);
                 request.ContentType = "application/json";
                 string response = string.Empty;
                 request.Credentials = CredentialCache.DefaultCredentials;
@@ -134,13 +217,26 @@ namespace WindowsForms_client
                 string data = null;
                 if (type == postFuncType.Auth)
                 {
-                    data = "{ \"id\": \"user\", \"plateNum\": \"LBV6157\" }";
+
+                    //string hsPW = Hash.getHashSha256(password);
+                    //data = string.Format("\"userid\": \"{0}\", \"password\": \"{1}\"", userid, hsPW);
+                    data = string.Format("\"userid\": \"{0}\", \"password\": \"{1}\"", userid, password);
+
+                    data = "{" + data + "}";
                 }
                 else if (type == postFuncType.Plate)
                 {
+                    string bearer = "Bearer " + tokenVal;
+                    request.Headers.Add("Authorization", bearer);
                     data = string.Format("\"id\": \"user\", \"plateNum\": \"{0}\"", plateNum);
                     data = "{" + data + "}";
                     //data = "{ \"id\": \"user\", \"plateNum\": \"LBV615\" }";
+                }
+                else if(type == postFuncType.OTPReqeust)
+                {
+                    data = string.Format("\"userid\": \"{0}\", \"otpKey\": \"{1}\"", userid, receivedOTPNumber);
+                    data = "{" + data + "}";
+
                 }
                 else
                 {
@@ -150,9 +246,9 @@ namespace WindowsForms_client
                 // request setting
                 request.Method = "POST";
                 request.ContentType = "application/json";
-                request.Timeout = 300;
+                request.Timeout = timeout;
                 //request.ContentType = "application/x-www-form-urlencoded";
-                //request.Headers.Add("Authorization", "BASIC SGVsbG8=");
+              
 
                 // Data Stream setting
                 byte[] bytes = Encoding.ASCII.GetBytes(data);
@@ -166,8 +262,10 @@ namespace WindowsForms_client
 
                 // Response
                 string responseText = string.Empty;
+              
                 using (HttpWebResponse res = (HttpWebResponse)request.GetResponse())
                 {
+                   
                     HttpStatusCode status = res.StatusCode;
                     if (status == HttpStatusCode.OK)
                     {
@@ -179,7 +277,32 @@ namespace WindowsForms_client
                         this.Invoke(new Action(delegate ()
                         {
                             TXT_DESC.AppendText(response);
-                            if(!response.Contains("@@@@"))
+                            receivedJSON obj = JsonConvert.DeserializeObject<receivedJSON>(response);
+                            switch (type)
+                            {
+                                case postFuncType.Auth:
+                                    if (obj.code == "200")
+                                    {
+                                        bLoginPASS = true;
+                                    }
+                                    break;
+                                case postFuncType.Plate:
+                                    break;
+                                case postFuncType.OTPReqeust:
+                                    break;
+                                default:
+                                    break;
+                            }
+                          
+                           
+                            if(obj.code == "200")
+                            {
+
+                            }
+                            //TXT_DESC.AppendText(rootObject.code);
+                            //TXT_DESC.AppendText(rootObject.msg);
+                            //TXT_DESC.AppendText(rootObject.token);
+                            if (!response.Contains("@@@@"))
                             {
                                 string[] infos = response.Split('\n');
                                 if (infos.Length > 0)
@@ -199,9 +322,10 @@ namespace WindowsForms_client
             }
             catch(Exception ex)
             {
-
+                result = false;
+                MessageBox.Show(ex.ToString());
             }
-
+            return result;
             
             
         }
@@ -316,7 +440,6 @@ namespace WindowsForms_client
                             if (platenum[0].Length > 4)
                                 postdata(postFuncType.Plate, platenum[0]);
                         }
-                            
                         else
                             dataGridView1.Rows.Add(platenum);
                     }));
@@ -414,8 +537,62 @@ namespace WindowsForms_client
             menuToolStripMenuItem.HideDropDown();
             
         }
+        
+        private async void BTN_LOGIN_Click(object sender, EventArgs e)
+        {
+         
+            this.Invoke(new Action(delegate ()
+            {
+                this.progressBar1.Value = 0;
+                this.progressBar1.Maximum = 150;
+            }));
+            //await ProcessData();
+            loginWating.Start();
+            await Task.Run(() =>
+            {
+                //1. ID/PW넣고 서버에 송신
+                postdata(postFuncType.Auth, null, TXT_ID.Text, TXT_PW.Text, 20000);
+            });
+          
+            this.Invoke(new Action(delegate ()
+            {
+                loginWating.Stop();
+                this.progressBar1.Value = progressBar1.Maximum;
+                
+            }));
+                                        
+            if(bLoginPASS)
+            {
+                if (otpInput == null)
+                {
+                    //개인 계정을 통해 OTP번호 확인 후 기입 후 송신
+                    otpInput = new Form2(receivedOTPNumber);
+                    otpInput.Owner = this;
+                    if (otpInput.ShowDialog() == DialogResult.OK)
+                    {
+                        //loadALPR();
+                        //Request OTP
+                        postdata(postFuncType.OTPReqeust, "", TXT_ID.Text, null, 300, receivedOTPNumber);
+                    }
+                }
+                else
+                {
+                    if (otpInput.ShowDialog() == DialogResult.OK)
+                    {
+                        postdata(postFuncType.OTPReqeust, "", TXT_ID.Text, null, 300, receivedOTPNumber);
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Login Fail\nPlease check your ID/PW","Log-In",MessageBoxButtons.OK,MessageBoxIcon.Exclamation);
+            }
+            bLoginPASS = false;
+            
+                
 
-        private void BTN_LOGIN_Click(object sender, EventArgs e)
+        }
+        private void loadALPR()
         {
             //string[] temp = { "1", "2" ,"3", "4", "5", "6", "7", "8", "9", "10", "11"};
             //dataGridView1.Rows.Add(temp);
@@ -434,13 +611,31 @@ namespace WindowsForms_client
                     MoveWindow(process.MainWindowHandle, 0, 0, panel1.Width, panel1.Height, true);
                 }
             }
-
         }
 
         private void MainFrm_FormClosing(object sender, FormClosingEventArgs e)
         {
             producer.Abort();
            
+        }
+        private Task ProcessData()
+        {
+            return Task.Run(() =>
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    this.Invoke(new Action(async delegate ()
+                    {
+                        // Task.Delay(10);
+                        progressBar1.Increment(1);
+                    }));
+
+                 
+
+                }
+
+            });
+
         }
     }
 }

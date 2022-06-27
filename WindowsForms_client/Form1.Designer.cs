@@ -52,10 +52,13 @@
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.label4 = new System.Windows.Forms.Label();
+            this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.TXT_DESC = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
+            this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // dataGridView1
@@ -211,9 +214,21 @@
             // 
             // panel1
             // 
-            this.panel1.BackgroundImage = global::WindowsForms_client.Properties.Resources.internet_lock_locked_padlock_password_secure_security_icon_127100;
             resources.ApplyResources(this.panel1, "panel1");
+            this.panel1.Controls.Add(this.label4);
+            this.panel1.Controls.Add(this.progressBar1);
             this.panel1.Name = "panel1";
+            // 
+            // label4
+            // 
+            resources.ApplyResources(this.label4, "label4");
+            this.label4.Name = "label4";
+            // 
+            // progressBar1
+            // 
+            resources.ApplyResources(this.progressBar1, "progressBar1");
+            this.progressBar1.Maximum = 200;
+            this.progressBar1.Name = "progressBar1";
             // 
             // TXT_DESC
             // 
@@ -243,6 +258,8 @@
             this.menuStrip1.PerformLayout();
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            this.panel1.ResumeLayout(false);
+            this.panel1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -274,6 +291,8 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn VM;
         private System.Windows.Forms.DataGridViewTextBoxColumn VModel;
         private System.Windows.Forms.DataGridViewTextBoxColumn VC;
+        private System.Windows.Forms.ProgressBar progressBar1;
+        private System.Windows.Forms.Label label4;
     }
 }
 
