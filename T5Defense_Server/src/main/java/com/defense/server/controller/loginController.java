@@ -5,13 +5,16 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.defense.server.entity.Users;
+import com.defense.server.jwt.util.JwtUtil;
+import com.defense.server.jwt.util.ResultCode;
+import com.defense.server.jwt.util.ResultJson;
 import com.defense.server.login.loginService;
 import com.defense.server.repository.UserRepository;
 
@@ -21,34 +24,55 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class loginController {
+	private final long OTP_TIMEOUT_SEC = 60 * 10;
+	private final String OTP_STATUS_START = "start";
+	private final String OTP_STATUS_FINISHED = "finished";
+	
 	private final UserRepository userRepository;
+	private final JwtUtil jwtUtil;
 
     /*
      * JSON format
      * {
-     *     "userid" : "ID"
-     *     "password" : "123456"
+     *     "userid":"ID",
+     *     "password":"123456"
      * }
      * */
 	@ResponseBody
-	@RequestMapping("/login")
-	public String login(@RequestBody Map<String, Object> recvInfo, Model model) {
-
-		String userid = recvInfo.get("userid").toString();
-		String password = recvInfo.get("password").toString();
-
-		Users userInfo = this.userRepository.findUserByUserid(userid);
+	@PostMapping("/login")
+	public ResultJson login(@RequestBody Map<String, Object> recvInfo) {
+		ResultJson resultJson = new ResultJson();
 		
-		if(password.equals(userInfo.getPassword()))
-		{
-			this.sendMail(userInfo);
-		}
-		else
-		{
-			return "Wrong Password";
+		try {
+			if (recvInfo == null) {
+				throw new Exception("Invalid arguments");
+			}
+			
+			Object userid = recvInfo.get("userid");
+			Object password = recvInfo.get("password");
+			if (userid == null || password == null) {
+				throw new Exception("Invalid arguments");
+			}
+			
+			Users userInfo = userRepository.findUserByUserid(userid.toString());
+			if (userInfo == null) {
+				throw new Exception("The user does not exist");
+			}
+			
+			if (!password.toString().equals(userInfo.getPassword())) {
+				throw new Exception("Invalid password");
+			}
+			
+			sendMail(userInfo);
+			
+			resultJson.setCode(ResultCode.SUCCESS.getCode());
+			resultJson.setMsg(ResultCode.SUCCESS.getMsg());
+		} catch (Exception e) {
+			resultJson.setCode(ResultCode.LOGIN_FAIL.getCode());
+			resultJson.setMsg(ResultCode.LOGIN_FAIL.getMsg());
 		}
 		
-		return "login Success\n"+"Please check OTP";
+		return resultJson;
 	}
 	
 	// 2nd Authentication - email-authentication(Link)
@@ -64,44 +88,71 @@ public class loginController {
     	// Current time for OTP Timeout
     	LocalDateTime now = LocalDateTime.now();
     	user.setRegDate(now);
-    	
-    	this.userRepository.save(user);
+    	user.setCheck2ndauth(OTP_STATUS_START);
+    	userRepository.save(user);
     	
         result = loginService.sendOtpMail(user.getEmail(), otpKey);
         return result;
     }
 
-    
     /*
      * JSON format
      * {
-     *     "userid" : "ID"
-     *     "otpKey" : "123456"
+     *     "userid":"ID",
+     *     "otpKey":"123456"
      * }
      * */
     @ResponseBody
-    @RequestMapping("/otp-check")
-    public String signUpConfirm(@RequestBody Map<String, Object> recvInfo, Model model) {
+    @PostMapping("/otp-check")
+    public ResultJson signUpConfirm(@RequestBody Map<String, Object> recvInfo) {
+    	ResultJson resultJson = new ResultJson();
     	
-    	String userid = recvInfo.get("userid").toString();
-		String otpKey = recvInfo.get("otpKey").toString();
+    	try {
+			if (recvInfo == null) {
+				throw new Exception("Invalid arguments");
+			}
+			
+			Object userid = recvInfo.get("userid");
+			Object otpKey = recvInfo.get("otpKey");
+			if (userid == null || otpKey == null) {
+				throw new Exception("Invalid arguments");
+			}
+			
+			Users userInfo = userRepository.findUserByUserid(userid.toString());
+			if (userInfo == null) {
+				throw new Exception("The user does not exist");
+			}
+			
+			String otpStatus = userInfo.getCheck2ndauth();
+			if (!otpStatus.equals(OTP_STATUS_START)) {
+				throw new Exception("OTP session terminated");
+			}
+			
+	    	Duration duration = Duration.between(userInfo.getRegDate(), LocalDateTime.now());
+	    	if (duration.getSeconds() > OTP_TIMEOUT_SEC) {
+	    		userInfo.setCheck2ndauth(OTP_STATUS_FINISHED);
+	    		userRepository.save(userInfo);
+	    		throw new Exception("OTP session terminated");
+	    	}
+	    	
+	    	if (userInfo.getOtpKey() != Integer.parseInt(otpKey.toString())) {
+	    		throw new Exception("Invalid OTP");
+	    	}
+	    	
+	    	userInfo.setCheck2ndauth(OTP_STATUS_FINISHED);
+    		userRepository.save(userInfo);
+    		
+    		String token = jwtUtil.generateToken(userInfo);
+    		
+    		resultJson.setCode(ResultCode.SUCCESS.getCode());
+    		resultJson.setMsg(ResultCode.SUCCESS.getMsg());
+    		resultJson.setToken(token);
+		} catch (Exception e) {
+			resultJson.setCode(ResultCode.LOGIN_FAIL.getCode());
+			resultJson.setMsg(ResultCode.LOGIN_FAIL.getMsg());
+			resultJson.setToken("");
+		}
     	
-    	Users userInfo = this.userRepository.findUserByUserid(userid);
-    	LocalDateTime now = LocalDateTime.now();
-    	Duration duration = Duration.between(userInfo.getRegDate(), now);
-
-    	int durationOfTimeout = 600;
-
-    	if (userInfo.getOtpKey() == Integer.parseInt(otpKey) && duration.getSeconds() < durationOfTimeout)
-    	{
-    		userInfo.setCheck2ndauth("SUCCESS");
-    		this.userRepository.save(userInfo);
-    	}
-    	else
-    	{
-    		return "Fail to 2FA";
-    	}
-    	
-    	return "Success to 2FA";
+    	return resultJson;
    }
 }
