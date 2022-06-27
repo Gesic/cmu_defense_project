@@ -33,7 +33,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
 
         //아래 경로는 이 필터가 적용되지 않는다.
-        if (path.startsWith("/auth")) {
+        if (path.startsWith("/auth") || path.startsWith("/h2-console")) {
             filterChain.doFilter(request, response);
             return;
         }
