@@ -31,6 +31,8 @@ public class loginController {
 	private final UserRepository userRepository;
 	private final JwtUtil jwtUtil;
 
+	// 2nd Authentication - email-authentication(Link)
+    private final loginService loginService;
     /*
      * JSON format
      * {
@@ -42,6 +44,7 @@ public class loginController {
 	@PostMapping("/login")
 	public ResultJson login(@RequestBody Map<String, Object> recvInfo) {
 		ResultJson resultJson = new ResultJson();
+		Users userInfo;
 		
 		try {
 			if (recvInfo == null) {
@@ -54,17 +57,24 @@ public class loginController {
 				throw new Exception("Invalid arguments");
 			}
 			
-			Users userInfo = userRepository.findUserByUserid(userid.toString());
+			// Create User/Car DB, if DB is empty.
+			if (userRepository.count() == 0)
+			{
+				loginService.createUserDB();
+				loginService.createPlateInfoDB();
+			}
+
+			userInfo = userRepository.findUserByUserid(userid.toString());
 			if (userInfo == null) {
 				throw new Exception("The user does not exist");
 			}
-			
+
 			if (!password.toString().equals(userInfo.getPassword())) {
 				throw new Exception("Invalid password");
 			}
-			
+
 			sendMail(userInfo);
-			
+
 			resultJson.setCode(ResultCode.SUCCESS.getCode());
 			resultJson.setMsg(ResultCode.SUCCESS.getMsg());
 		} catch (Exception e) {
@@ -75,9 +85,6 @@ public class loginController {
 		return resultJson;
 	}
 	
-	// 2nd Authentication - email-authentication(Link)
-    private final loginService loginService;
-
     public String sendMail(Users user) {
     	String result;
     	
@@ -106,7 +113,7 @@ public class loginController {
     @PostMapping("/otp-check")
     public ResultJson signUpConfirm(@RequestBody Map<String, Object> recvInfo) {
     	ResultJson resultJson = new ResultJson();
-    	
+    	Users userInfo;
     	try {
 			if (recvInfo == null) {
 				throw new Exception("Invalid arguments");
@@ -118,7 +125,7 @@ public class loginController {
 				throw new Exception("Invalid arguments");
 			}
 			
-			Users userInfo = userRepository.findUserByUserid(userid.toString());
+			userInfo = userRepository.findUserByUserid(userid.toString());
 			if (userInfo == null) {
 				throw new Exception("The user does not exist");
 			}

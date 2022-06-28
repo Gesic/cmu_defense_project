@@ -5,6 +5,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Table;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -12,13 +13,14 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
+@Table(name = "plateinfo")
 public class Plateinfo {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     
-	@Column(columnDefinition = "TEXT")
+	@Column(columnDefinition = "TEXT", unique = true)
     private String licensenumber;
 	
 	@Column(columnDefinition = "TEXT")
