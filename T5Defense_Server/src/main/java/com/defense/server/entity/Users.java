@@ -39,4 +39,7 @@ public class Users {
 
 	@Column(name = "check2ndauth", length = 20, nullable = true)
 	private String check2ndauth;
+
+	@Column(name = "failcount", length = 10, nullable = true)
+	private int failcount;
 }

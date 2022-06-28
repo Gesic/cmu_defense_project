@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class loginController {
+	private final int PW_FAIL_COUNT = 5;
 	private final long OTP_TIMEOUT_SEC = 60 * 10;
 	private final String OTP_STATUS_START = "start";
 	private final String OTP_STATUS_FINISHED = "finished";
@@ -69,8 +70,15 @@ public class loginController {
 				throw new Exception("The user does not exist");
 			}
 
+			if(userInfo.getFailcount() == PW_FAIL_COUNT)
+			{
+				throw new Exception("Please contact administrator");
+			}
+
 			if (!password.toString().equals(userInfo.getPassword())) {
-				throw new Exception("Invalid password");
+				userInfo.setFailcount(userInfo.getFailcount() + 1);
+				userRepository.save(userInfo);
+				throw new Exception("Invalid password, Fail Count:" + userInfo.getFailcount());
 			}
 
 			sendMail(userInfo);
@@ -79,7 +87,7 @@ public class loginController {
 			resultJson.setMsg(ResultCode.SUCCESS.getMsg());
 		} catch (Exception e) {
 			resultJson.setCode(ResultCode.LOGIN_FAIL.getCode());
-			resultJson.setMsg(ResultCode.LOGIN_FAIL.getMsg());
+			resultJson.setMsg(ResultCode.LOGIN_FAIL.getMsg() + " Reason: " + e.getMessage());
 		}
 		
 		return resultJson;
@@ -88,10 +96,13 @@ public class loginController {
     public String sendMail(Users user) {
     	String result;
     	
+		// Reset fail counts of password
+		user.setFailcount(0);
+
     	// create OTP key (6 digit)
     	int otpKey = ThreadLocalRandom.current().nextInt(100000, 1000000);
     	user.setOtpKey(otpKey);
-    	
+
     	// Current time for OTP Timeout
     	LocalDateTime now = LocalDateTime.now();
     	user.setRegDate(now);
@@ -156,10 +167,10 @@ public class loginController {
     		resultJson.setToken(token);
 		} catch (Exception e) {
 			resultJson.setCode(ResultCode.LOGIN_FAIL.getCode());
-			resultJson.setMsg(ResultCode.LOGIN_FAIL.getMsg());
+			resultJson.setMsg(ResultCode.LOGIN_FAIL.getMsg() + " Reason: " + e.getMessage());
 			resultJson.setToken("");
 		}
-    	
+
     	return resultJson;
    }
 }
