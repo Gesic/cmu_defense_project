@@ -55,6 +55,9 @@
             this.label4 = new System.Windows.Forms.Label();
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.TXT_DESC = new System.Windows.Forms.TextBox();
+            this.saveWithEncryptToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.decryptToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.panel2 = new System.Windows.Forms.Panel();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -154,6 +157,8 @@
             // 
             this.menuToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.saveToolStripMenuItem,
+            this.saveWithEncryptToolStripMenuItem,
+            this.decryptToolStripMenuItem,
             this.logoutToolStripMenuItem});
             this.menuToolStripMenuItem.Name = "menuToolStripMenuItem";
             resources.ApplyResources(this.menuToolStripMenuItem, "menuToolStripMenuItem");
@@ -215,6 +220,7 @@
             // panel1
             // 
             resources.ApplyResources(this.panel1, "panel1");
+            this.panel1.Controls.Add(this.panel2);
             this.panel1.Controls.Add(this.label4);
             this.panel1.Controls.Add(this.progressBar1);
             this.panel1.Name = "panel1";
@@ -234,6 +240,21 @@
             // 
             resources.ApplyResources(this.TXT_DESC, "TXT_DESC");
             this.TXT_DESC.Name = "TXT_DESC";
+            // 
+            // saveWithEncryptToolStripMenuItem
+            // 
+            this.saveWithEncryptToolStripMenuItem.Name = "saveWithEncryptToolStripMenuItem";
+            resources.ApplyResources(this.saveWithEncryptToolStripMenuItem, "saveWithEncryptToolStripMenuItem");
+            // 
+            // decryptToolStripMenuItem
+            // 
+            this.decryptToolStripMenuItem.Name = "decryptToolStripMenuItem";
+            resources.ApplyResources(this.decryptToolStripMenuItem, "decryptToolStripMenuItem");
+            // 
+            // panel2
+            // 
+            resources.ApplyResources(this.panel2, "panel2");
+            this.panel2.Name = "panel2";
             // 
             // MainFrm
             // 
@@ -293,6 +314,9 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn VC;
         private System.Windows.Forms.ProgressBar progressBar1;
         private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.ToolStripMenuItem saveWithEncryptToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem decryptToolStripMenuItem;
+        private System.Windows.Forms.Panel panel2;
     }
 }
 
