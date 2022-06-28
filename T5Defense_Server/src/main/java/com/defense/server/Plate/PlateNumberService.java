@@ -29,18 +29,21 @@ public class PlateNumberService {
 	public String getQueryForPlateNum(String platenum) {
 		String result = "";
 		List<Plateinfo> searchresult = this.plateRepository.findByLicensenumber(platenum);
-		result += searchresult.get(0).getLicensenumber() + "\n";
-		result += searchresult.get(0).getLicensestatus() + "\n";
-		result += searchresult.get(0).getOwnername() + "\n";
-		result += searchresult.get(0).getOwnerbirthday() + "\n";
-		result += searchresult.get(0).getOwneraddress() + "\n";
-		result += searchresult.get(0).getOwnercity() + "\n";
-		result += searchresult.get(0).getVhemanufacture() + "\n";
-		result += searchresult.get(0).getVhemake() + "\n";
-		result += searchresult.get(0).getVhemodel() + "\n";
-		result += searchresult.get(0).getVhecolor() + "\n";
-		System.out.println(result);
-		return result;
+		if (searchresult.size() != 0) {
+			result += searchresult.get(0).getLicensenumber() + "\n";
+			result += searchresult.get(0).getLicensestatus() + "\n";
+			result += searchresult.get(0).getOwnername() + "\n";
+			result += searchresult.get(0).getOwnerbirthday() + "\n";
+			result += searchresult.get(0).getOwneraddress() + "\n";
+			result += searchresult.get(0).getOwnercity() + "\n";
+			result += searchresult.get(0).getVhemanufacture() + "\n";
+			result += searchresult.get(0).getVhemake() + "\n";
+			result += searchresult.get(0).getVhemodel() + "\n";
+			result += searchresult.get(0).getVhecolor() + "\n";
+//			System.out.println(result);
+			return result;
+		} else
+			return "@@@@";
 	}
 
 }

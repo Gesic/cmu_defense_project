@@ -37,7 +37,7 @@ public class Users {
 	@Column(name = "regdate")
 	private LocalDateTime regDate;
 
-	@Column(name = "email", length = 20, nullable = true)
+	@Column(name = "email", length = 50, nullable = true)
 	private String email;
 
 	@Column(name = "otpKey", length = 10, nullable = true)

@@ -25,7 +25,7 @@ public class MainController {
 	public String home(Model model) {
 		List<Plateinfo> plateNumberList = this.plateNumberService.getList();
 		model.addAttribute("plateNumberList", plateNumberList);
-		return "db_go"; // html file
+		return "db"; // html file
 	}
 
 	@RequestMapping(value = "/", method = { RequestMethod.GET, RequestMethod.POST })
@@ -37,7 +37,7 @@ public class MainController {
 	@RequestMapping(value = "/testJSON", method = RequestMethod.POST)
 	public List<Plateinfo> getResultJSON(@RequestBody Map<String, Object> recvInfo, Model model) {
 		List<Plateinfo> result = this.plateNumberService.getQueryForPlateNumJSON(recvInfo.get("plateNum").toString());
-		System.out.println(result.toString());
+//		System.out.println(result.toString());
 		return result;
 	}
 

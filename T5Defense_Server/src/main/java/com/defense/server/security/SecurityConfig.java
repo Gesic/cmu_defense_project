@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 	private final UserDetailService userDetailService;
-	private final JwtRequestFilter jwtRequestFilter;
+//	private final JwtRequestFilter jwtRequestFilter;
 
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
