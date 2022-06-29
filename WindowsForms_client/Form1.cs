@@ -22,18 +22,29 @@ using System.Net.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Security.Cryptography;
+using NLog;
+
+
 
 namespace WindowsForms_client
 {
 
-    enum postFuncType
+    enum reqFuncType
     {
         Auth,
         Plate,
         OTPReqeust
     };
+    enum ServerStatusCode
+    {
+        OK=200,
+        NG=900,
+    };
     public partial class MainFrm : Form
     {
+
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
         [DllImport("kernel32.dll", EntryPoint = "AllocConsole", SetLastError = true, CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
         private static extern int AllocConsole();
         [DllImport("user32.dll", SetLastError = true)]
@@ -42,7 +53,7 @@ namespace WindowsForms_client
         static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
 
         WebRequestHandler clientHandler;
-        Thread producer;
+        Thread IPCListener;
         string tokenVal = null;
         const int BUFFER_SIZE = 4096;  // 4 KB
         //const string serverURL = "http://localhost:8080";
@@ -51,18 +62,16 @@ namespace WindowsForms_client
         Form2 otpInput = null;
         public string receivedOTPNumber;
         System.Windows.Forms.Timer loginWating = null;
-        bool bLoginPASS = false;
-        //https://10.58.6.244:8443/db  
-        //https://10.58.6.244:8080/db
+        private bool bLoginPASS = false;
         class ResponseAPI
         {
             public string id { get; set; }
             public string plateNum { get; set; }
 
         }
-        public class receivedJSON
+        public class receivedMSG
         {
-            public string code;
+            public int code;
             public string msg;
             public string token;
 
@@ -116,13 +125,13 @@ namespace WindowsForms_client
         {
 
             InitializeComponent();
+            setCertification();
             loginWating = new System.Windows.Forms.Timer();
             loginWating.Tick += LoginWating_Tick;
             loginWating.Interval = 50;
-            this.Location = new Point(0, 0);
             //AllocConsole();
             this.dataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            setCertification();
+           
         }
 
         private void LoginWating_Tick(object sender, EventArgs e)
@@ -164,16 +173,26 @@ namespace WindowsForms_client
             //X509Certificate2 modCert = new X509Certificate2(crt,"qwe123..");
             string certName = "CN=CLIENT, OU=CMU22_DEF, O=LGE, L=PGH, S=PA, C=US";
             X509Certificate2 cert = GetCertificateFromStore(certName);
-            X509Store store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
+            if (cert == null)
+            {
+                MessageBox.Show("Client must have specific certification to connect server.\nPlease contact server administrator to gain certifiacion", "Certification Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Environment.Exit(0);
+            }
+            else
+            {
+                clientHandler.ClientCertificates.Add(cert);
+                clientHandler.AuthenticationLevel = System.Net.Security.AuthenticationLevel.MutualAuthRequired;
+                clientHandler.ClientCertificateOptions = ClientCertificateOption.Manual;
+            }
+
+            //X509Store store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
             //store.Open(OpenFlags.ReadWrite);
             //store.Add(modCert);
-            clientHandler.ClientCertificates.Add(cert);
-            clientHandler.AuthenticationLevel = System.Net.Security.AuthenticationLevel.MutualAuthRequested;
-            clientHandler.ClientCertificateOptions = ClientCertificateOption.Manual;
+         
         }
 
 
-        private Task<HttpResponseMessage> HttpPostMessageSecure(postFuncType type, string plateNum = null, string userid = null, string password = null, int timeout = 300, string optNum = null)
+        private Task<HttpResponseMessage> HttpPostMessageSecure(reqFuncType type, string plateNum = null, string userid = null, string password = null, int timeout = 300, string optNum = null)
         {
             HttpResponseMessage response = null;
             try
@@ -182,13 +201,13 @@ namespace WindowsForms_client
                 string urlAddress = serverURL;
                 switch (type)
                 {
-                    case postFuncType.Auth:
+                    case reqFuncType.Auth:
                         urlAddress += "/auth/login";
                         break;
-                    case postFuncType.Plate:
-                        urlAddress += "/testJSON";
+                    case reqFuncType.Plate:
+                        urlAddress += "/testJSON";//  /DB/vehicle
                         break;
-                    case postFuncType.OTPReqeust:
+                    case reqFuncType.OTPReqeust:
                         urlAddress += "/auth/otp-check";
                         break;
                     default:
@@ -199,7 +218,8 @@ namespace WindowsForms_client
                 HttpClient _httpClient = new HttpClient(clientHandler);
                 _httpClient.Timeout = new TimeSpan(0, 0, 0, 0, timeout);
                 _httpClient.BaseAddress = new Uri(urlAddress);
-                //tokenVal = "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6ImFhYSIsImlhdCI6MTY1NjM5ODE0NSwiZXhwIjoxNjU2NDg0NTQ1fQ.H5e0L_3jLRvi-ShNEy4uQi3eG75DNsuudmJXtqRI9Gs";
+                //tokenVal = "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6ImFhYSIsImlhdCI6MTY1NjQ4MTU2NiwiZXhwIjoxNjU2NTY3OTY2fQ.E5E7egalan1_TfAFpQ2yldlpGn3NV4apu41H3v";
+
                 string bearer = "Bearer " + tokenVal;
                 _httpClient.DefaultRequestHeaders.Add("Authorization", bearer);
                 _httpClient.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
@@ -208,21 +228,22 @@ namespace WindowsForms_client
                 queryAccount accountInfo = null;
                 queryPlate plateInfo = null;
                 queryOTP OTPInfo = null;
+                Logger.Info($"[Request to Server : RequestType:{type} Addr:{_httpClient.BaseAddress}");
                 switch (type)
                 {
-                    case postFuncType.Auth:
+                    case reqFuncType.Auth:
                         accountInfo = new queryAccount();
                         accountInfo.userid = userid;
-                        accountInfo.password = password;
+                        accountInfo.password = password; //Hash.getHashSha256(password);
                         response = _httpClient.PostAsJsonAsync(_httpClient.BaseAddress, accountInfo).Result;
                         break;
-                    case postFuncType.Plate:
+                    case reqFuncType.Plate:
                         plateInfo = new queryPlate();
                         plateInfo.id = "user";
                         plateInfo.plateNum = plateNum;
                         response = _httpClient.PostAsJsonAsync(_httpClient.BaseAddress, plateInfo).Result;
                         break;
-                    case postFuncType.OTPReqeust:
+                    case reqFuncType.OTPReqeust:
                         OTPInfo = new queryOTP();
                         OTPInfo.userid = userid;
                         OTPInfo.otpKey = receivedOTPNumber;
@@ -232,11 +253,12 @@ namespace WindowsForms_client
                         break;
 
                 }
+                Logger.Info($"[Response StatusCode] : {response.StatusCode}"); 
                 if (response.StatusCode == HttpStatusCode.OK)
                 {
                     //response 
                     var contents = response.Content.ReadAsStringAsync();
-                    receivedJSON recevJson = null;
+                    receivedMSG returnMSG = null;
                     this.Invoke(new Action(delegate ()
                     {
                         TXT_DESC.AppendText(contents.Result.ToString());
@@ -244,12 +266,13 @@ namespace WindowsForms_client
                     }));
                     switch (type)
                     {
-                        case postFuncType.Auth:
-                            recevJson = response.Content.ReadAsAsync<receivedJSON>().Result;
-                            if (recevJson.code == "200")
+                        case reqFuncType.Auth:
+                            returnMSG = response.Content.ReadAsAsync<receivedMSG>().Result;
+                            Logger.Info($"[Response from Server] RequestType:{type} StatusCode:{response.StatusCode} StatusMessage:{returnMSG.msg} {returnMSG.code}");
+                            if (returnMSG.code == (int)ServerStatusCode.OK)
                                 bLoginPASS = true;
                             break;
-                        case postFuncType.Plate:
+                        case reqFuncType.Plate:
                             var recevJsonPlate = response.Content.ReadAsAsync<receivedPlateInfo>().Result;
                             this.Invoke(new Action(delegate ()
                             {
@@ -260,35 +283,33 @@ namespace WindowsForms_client
 
                             }));
                             break;
-                        case postFuncType.OTPReqeust:
-                            recevJson = response.Content.ReadAsAsync<receivedJSON>().Result;
-                            if (recevJson.code == "200")
+                        case reqFuncType.OTPReqeust:
+                            returnMSG = response.Content.ReadAsAsync<receivedMSG>().Result;
+                            Logger.Info($"[Response from Server : {type} {response.StatusCode} {returnMSG.msg} {returnMSG.code}");
+                            if (returnMSG.code == (int)ServerStatusCode.OK)
                             {
-                                tokenVal = recevJson.token;
+                                tokenVal = returnMSG.token;
                                 this.Invoke(new Action(delegate ()
                                 {
                                     TXT_ID.Enabled = false;
                                     TXT_PW.Enabled = false;
                                     BTN_LOGIN.Enabled = false;
                                 }));
-                                MessageBox.Show("Success to login!!!", "Login", MessageBoxButtons.OK, MessageBoxIcon.Information);
                                 loadALPR();
+                                MessageBox.Show("Success to login!!!", "Login", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                               
                             }
-                            else if(recevJson.code == "900")
+                            else if(returnMSG.code == (int)ServerStatusCode.NG)
                             {
                                 MessageBox.Show("Your OTP number is wrong!!!\nPlease confirm your OTP number","OTP Number",MessageBoxButtons.OK,MessageBoxIcon.Information);
                             }
-
                             break;
                         default:
                             break;
 
                     }
 
-
-
                 }
-
 
             }
             catch (Exception ex)
@@ -298,38 +319,33 @@ namespace WindowsForms_client
 
             return Task.FromResult(response);
 
-
-
         }
-        private void addCertification()
-        {
+        //private void addCertification()
+        //{
 
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            clientHandler = new WebRequestHandler();
-            string crt = Path.Combine(System.Windows.Forms.Application.StartupPath, "client.pfx");
-            X509Certificate2 modCert = new X509Certificate2(crt, "qwe123..");
-            X509Store store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
+        //    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+        //    clientHandler = new WebRequestHandler();
+        //    string crt = Path.Combine(System.Windows.Forms.Application.StartupPath, "client.pfx");
+        //    X509Certificate2 modCert = new X509Certificate2(crt, "qwe123..");
+        //    X509Store store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
 
-            store.Open(OpenFlags.ReadWrite);
-            store.Add(modCert);
-
-
-            clientHandler.ClientCertificates.Add(modCert);
-            clientHandler.AuthenticationLevel = System.Net.Security.AuthenticationLevel.MutualAuthRequired;
-            clientHandler.ClientCertificateOptions = ClientCertificateOption.Manual;
-            //httpClient = gcnew HttpClient(clientHandler);
-            //HttpContent ^ httpContent = gcnew ByteArrayContent(state->postBody);
-            //httpContent->Headers->ContentType = gcnew MediaTypeHeaderValue("application/octet-stream");
-            //resultTask = httpClient->PostAsync(state->httpRequest, httpContent);
+        //    store.Open(OpenFlags.ReadWrite);
+        //    store.Add(modCert);
 
 
-        }
+        //    clientHandler.ClientCertificates.Add(modCert);
+        //    clientHandler.AuthenticationLevel = System.Net.Security.AuthenticationLevel.MutualAuthRequired;
+        //    clientHandler.ClientCertificateOptions = ClientCertificateOption.Manual;
+        //    //httpClient = gcnew HttpClient(clientHandler);
+        //    //HttpContent ^ httpContent = gcnew ByteArrayContent(state->postBody);
+        //    //httpContent->Headers->ContentType = gcnew MediaTypeHeaderValue("application/octet-stream");
+        //    //resultTask = httpClient->PostAsync(state->httpRequest, httpContent);
+
+
+        //}
         private void Form1_Load(object sender, EventArgs e)
         {
-
-            producer = new Thread(new ThreadStart(listenALPR));
-            producer.Start();
-
+            //loadALPR();
         }
         //private bool postdata(postFuncType type, string plateNum = null, string userid = null, string password = null, int timeout = 300, string optNum = null)
         //{
@@ -528,7 +544,7 @@ namespace WindowsForms_client
 
             /////////////////////////////////////////////////////////////////////
             // Wait for the client to connect.
-            // 
+            //////////////////////////////////////////////////////////////////////
 
             Console.WriteLine("Waiting for the client's connection...");
 
@@ -562,11 +578,10 @@ namespace WindowsForms_client
 
                 if (!bResult/*Failed*/ || cbBytesRead == 0/*Finished*/)
                 {
-                    producer.Abort();
+                    IPCListener.Abort();
                     Application.ExitThread();
                     Environment.Exit(0);
                 }
-
 
                 // Unicode-encode the byte array and trim all the '\0' chars at 
                 // the end.
@@ -578,12 +593,12 @@ namespace WindowsForms_client
                 {
                     this.Invoke(new Action(delegate ()
                     {
-                        TXT_DESC.AppendText("Plate Number: " + platenum[0] + Environment.NewLine);
+                        //TXT_DESC.AppendText("Plate Number: " + platenum[0] + Environment.NewLine);
                     }));
                     Task.Run(() =>
                     {
                         if (platenum[0].Length >= 6)
-                            HttpPostMessageSecure(postFuncType.Plate, platenum[0]);
+                            HttpPostMessageSecure(reqFuncType.Plate, platenum[0]);
                     });
 
 
@@ -591,11 +606,9 @@ namespace WindowsForms_client
 
 
             }
-
             PipeNative.FlushFileBuffers(hPipe);
             PipeNative.DisconnectNamedPipe(hPipe);
             PipeNative.CloseHandle(hPipe);
-            //Console.ReadKey();
         }
 
 
@@ -892,7 +905,7 @@ namespace WindowsForms_client
                             }
 
                             File.WriteAllLines(sfd.FileName, outputCsv, Encoding.UTF8);
-                            MessageBox.Show("Data Exported Successfully !!!", "Save File",MessageBoxButtons.OK,MessageBoxIcon.Information);
+                            MessageBox.Show("Data Exported Successfully !!!", "Save File", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
                         catch (Exception ex)
                         {
@@ -932,8 +945,20 @@ namespace WindowsForms_client
                 TXT_ID.Clear();
                 TXT_PW.Clear();
                 tokenVal = "";
+                Process[] processList = Process.GetProcessesByName("lgdemo_w");
+
+                if (processList.Length > 0)
+                {
+                    processList[0].Kill();
+                }
                 panel2.Visible = false;
                 panel1.Visible = true;
+                
+                dataGridView1.Rows.Clear();
+                dataGridView1.Refresh();
+
+                IPCListener.Abort();
+
             }));
           
 
@@ -965,6 +990,11 @@ namespace WindowsForms_client
         private async void BTN_LOGIN_Click(object sender, EventArgs e)
         {
 
+            if(TXT_ID.Text.Length == 0 || TXT_PW.Text.Length == 0)
+            {
+                MessageBox.Show("Please input your ID and password", "Log-In", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
             this.Invoke(new Action(delegate ()
             {
                 this.progressBar1.Value = 0;
@@ -974,7 +1004,7 @@ namespace WindowsForms_client
             await Task.Run(() =>
             {
                 //1. ID/PW넣고 서버에 송신
-                HttpPostMessageSecure(postFuncType.Auth, null, TXT_ID.Text, TXT_PW.Text, 20000);
+                HttpPostMessageSecure(reqFuncType.Auth, null, TXT_ID.Text, TXT_PW.Text, 20000);
             });
 
             this.Invoke(new Action(delegate ()
@@ -996,7 +1026,7 @@ namespace WindowsForms_client
                         //Request OTP
                         await Task.Run(() =>
                         {
-                            HttpPostMessageSecure(postFuncType.OTPReqeust, null, TXT_ID.Text, null, 10000, receivedOTPNumber);
+                            HttpPostMessageSecure(reqFuncType.OTPReqeust, null, TXT_ID.Text, null, 10000, receivedOTPNumber);
                         });
 
                     }
@@ -1007,7 +1037,7 @@ namespace WindowsForms_client
                     {
                         await Task.Run(() =>
                         {
-                            HttpPostMessageSecure(postFuncType.OTPReqeust, null, TXT_ID.Text, null, 10, receivedOTPNumber);
+                            HttpPostMessageSecure(reqFuncType.OTPReqeust, null, TXT_ID.Text, null, 10, receivedOTPNumber);
 
                         });
                     }
@@ -1024,12 +1054,13 @@ namespace WindowsForms_client
         }
         private void loadALPR()
         {
+            IPCListener = new Thread(listenALPR);
+            IPCListener.Start();
             this.Invoke(new Action(delegate ()
             {
                 panel2.Visible = true;
                
             }));
-      
             using (var process = new Process())
             {
                 process.StartInfo.FileName = "lgdemo_w.exe";
@@ -1039,17 +1070,24 @@ namespace WindowsForms_client
                 if (File.Exists(Path.Combine(process.StartInfo.WorkingDirectory, "lgdemo_w.exe")))
                 {
                     process.Start();
-                    IntPtr ptr = IntPtr.Zero;
-                    while ((ptr = process.MainWindowHandle) == IntPtr.Zero) ;
-                    SetParent(process.MainWindowHandle, panel2.Handle);
-                    MoveWindow(process.MainWindowHandle, 0, 0, panel2.Width, panel2.Height, true);
+                    this.Invoke(new Action(delegate ()
+                    {
+
+                        IntPtr ptr = IntPtr.Zero;
+                        while ((ptr = process.MainWindowHandle) == IntPtr.Zero) ;
+                        SetParent(process.MainWindowHandle, panel2.Handle);
+                        MoveWindow(process.MainWindowHandle, 0, 0, panel2.Width, panel2.Height, true);
+
+                    }));
+
                 }
             }
         }
 
         private void MainFrm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            producer.Abort();
+            if(IPCListener != null)
+                IPCListener.Abort();
 
         }
         private Task ProcessData()
