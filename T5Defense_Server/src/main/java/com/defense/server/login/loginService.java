@@ -94,16 +94,20 @@ public class loginService {
 
     		while((singleCh = fileReader.read()) != -1)
     		{
-    			if ((char)singleCh == '\n')
+    			if (singleCh == 13) // Check CR
     			{
     				dbList.add(tempDB);
     				tempDB = "";
+    			}
+    			else if (singleCh == 10) // Skip LF
+    			{
+    				// Do nothing
     			}
     			else if((char)singleCh == '$')
     			{
     				dbList.add(tempDB);
     				plateInfo = new Plateinfo();
-    				
+
     				plateInfo.setLicensenumber(dbList.get(0));
     				plateInfo.setLicensestatus(dbList.get(1));
     				plateInfo.setLicenseexpdate(dbList.get(2));
