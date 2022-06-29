@@ -17,36 +17,31 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Controller
+@RequestMapping("/db")
 public class MainController {
 
 	private final PlateNumberService plateNumberService;
 
-	@RequestMapping(value = "/db", method = { RequestMethod.GET, RequestMethod.POST })
+	@RequestMapping(value = "/main", method = { RequestMethod.GET, RequestMethod.POST })
 	public String home(Model model) {
 		List<Plateinfo> plateNumberList = this.plateNumberService.getList();
 		model.addAttribute("plateNumberList", plateNumberList);
 		return "db"; // html file
 	}
 
-	@RequestMapping(value = "/", method = { RequestMethod.GET, RequestMethod.POST })
-	public String root() {
-		return "redirect:/db";
+	@ResponseBody
+	@RequestMapping(value = "/vehicle", method = RequestMethod.POST)
+	public Plateinfo getResultJSON(@RequestBody Map<String, Object> recvInfo, Model model) {
+		List<Plateinfo> result = this.plateNumberService.getQueryForPlateNumJSON(recvInfo.get("licensenumber").toString());
+		return result.get(0);
 	}
 
-	@ResponseBody
-	@RequestMapping(value = "/testJSON", method = RequestMethod.POST)
-	public List<Plateinfo> getResultJSON(@RequestBody Map<String, Object> recvInfo, Model model) {
-		List<Plateinfo> result = this.plateNumberService.getQueryForPlateNumJSON(recvInfo.get("plateNum").toString());
-//		System.out.println(result.toString());
-		return result;
-	}
-
-	@ResponseBody
-	@RequestMapping(value = "/test", method = RequestMethod.POST)
-	public String getResult(@RequestBody Map<String, Object> recvInfo, Model model) {
-		String result = this.plateNumberService.getQueryForPlateNum(recvInfo.get("plateNum").toString());
-		model.addAttribute("RESULT", result);
-		return result;
-	}
+//	@ResponseBody
+//	@RequestMapping(value = "/test", method = RequestMethod.POST)
+//	public String getResult(@RequestBody Map<String, Object> recvInfo, Model model) {
+//		String result = this.plateNumberService.getQueryForPlateNum(recvInfo.get("licensenumber").toString());
+//		model.addAttribute("RESULT", result);
+//		return result;
+//	}
 
 }

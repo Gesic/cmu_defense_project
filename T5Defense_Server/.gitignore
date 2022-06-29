@@ -35,3 +35,8 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### DB & LOG ###
+local.trace.db
+local.mv.db
+SERVER_LOG*
