@@ -154,6 +154,8 @@ public class loginController {
 	    	}
 	    	
 	    	if (userInfo.getOtpKey() != Integer.parseInt(otpKey.toString())) {
+	    		userInfo.setCheck2ndauth(OTP_STATUS_FINISHED);
+	    		userRepository.save(userInfo);
 	    		throw new Exception("Invalid OTP");
 	    	}
 	    	
