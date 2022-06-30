@@ -24,8 +24,8 @@ public class loginService {
     private final UserRepository userRepository;
     private final PlateRepository plateRepository;
 
-    public loginService(JavaMailSender javaMailSender, UserRepository userRepository, PlateRepository plateRepository)
-    {
+    public loginService(JavaMailSender javaMailSender,
+    		UserRepository userRepository, PlateRepository plateRepository) {
     	this.userRepository = userRepository;
 		this.javaMailSender = javaMailSender;
 		this.plateRepository = plateRepository;
@@ -39,6 +39,7 @@ public class loginService {
 		Users searchresult = this.userRepository.findUserByUserid(userid);
 		return searchresult;
 	}
+	
     public String sendOtpMail(String userEmail, int otpKey) {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         try {
@@ -54,15 +55,14 @@ public class loginService {
     }
     
     // Create User Credential DB with "userData.txt"
-    public String createUserDB()
-    {
+    public String createUserDB() {
     	try {
     		Users tempUser;
     		
     		File file = new File("./userData.txt");
     		Scanner fileScanner = new Scanner(file);
     		String sysOut = null;
-    		while(fileScanner.hasNext())
+    		while (fileScanner.hasNext())
     		{
     			tempUser = new Users();
     			sysOut = fileScanner.nextLine();
@@ -82,8 +82,7 @@ public class loginService {
     }
 
     // Create Plate Info DB with "datafile.txt"
-    public String createPlateInfoDB()
-    {
+    public String createPlateInfoDB() {
     	try {
     		Plateinfo plateInfo = null;
 
@@ -92,19 +91,13 @@ public class loginService {
     		String tempDB = "";
     		List<String> dbList = new ArrayList<String>();
 
-    		while((singleCh = fileReader.read()) != -1)
-    		{
-    			if (singleCh == 13) // Check CR
-    			{
+    		while((singleCh = fileReader.read()) != -1) {
+    			if (singleCh == 13) { // Check CR
     				dbList.add(tempDB);
     				tempDB = "";
-    			}
-    			else if (singleCh == 10) // Skip LF
-    			{
+    			} else if (singleCh == 10) { // Skip LF
     				// Do nothing
-    			}
-    			else if((char)singleCh == '$')
-    			{
+    			} else if((char)singleCh == '$') {
     				dbList.add(tempDB);
     				plateInfo = new Plateinfo();
 
@@ -124,9 +117,7 @@ public class loginService {
 
     				dbList.clear();
     				tempDB = "";
-    			}
-    			else
-    			{
+    			} else {
     				tempDB += (char)singleCh;
     			}
     		}

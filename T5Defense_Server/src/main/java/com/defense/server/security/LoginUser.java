@@ -15,16 +15,16 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 public class LoginUser implements UserDetails {
-
+	private static final long serialVersionUID = -7054938634186361161L;
+	
 	private String username;
 	private String password;
 	private String role;
 	private List<String> roles;
 
 	public LoginUser(Users users) {
-		this.username = users.getUserid();
-		this.password = users.getPassword();
-//		this.role = users.getRole();
+		username = users.getUserid();
+		password = users.getPassword();
 	}
 
 	@Override
@@ -34,21 +34,21 @@ public class LoginUser implements UserDetails {
 
 	@Override
 	public boolean isAccountNonExpired() {
-		return false;
+		return true;
 	}
 
 	@Override
 	public boolean isAccountNonLocked() {
-		return false;
+		return true;
 	}
 
 	@Override
 	public boolean isCredentialsNonExpired() {
-		return false;
+		return true;
 	}
 
 	@Override
 	public boolean isEnabled() {
-		return false;
+		return true;
 	}
 }

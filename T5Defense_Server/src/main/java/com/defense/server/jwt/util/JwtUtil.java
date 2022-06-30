@@ -7,7 +7,6 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import com.defense.server.entity.Users;
 
@@ -22,27 +21,40 @@ import io.jsonwebtoken.security.Keys;
 public class JwtUtil {
 	@Value("${jwt.secret-key}")
 	private String secretKey;
+	
+	private final long TOKEN_VALID_TIME_MILLIS = 1000L * 60 * 60 * 24;
 
 	private String createToken(Map<String, Object> claims) {
 		String secretKeyEncodeBase64 = Encoders.BASE64.encode(secretKey.getBytes());
 		byte[] keyBytes = Decoders.BASE64.decode(secretKeyEncodeBase64);
 		Key key = Keys.hmacShaKeyFor(keyBytes);
 
-		return Jwts.builder().signWith(key).setClaims(claims).setIssuedAt(new Date(System.currentTimeMillis()))
-				.setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)).compact();
-
+		return Jwts.builder()
+				.signWith(key)
+				.setClaims(claims)
+				.setIssuedAt(new Date(System.currentTimeMillis()))
+				.setExpiration(new Date(System.currentTimeMillis() + TOKEN_VALID_TIME_MILLIS))
+				.compact();
 	}
 
 	private Claims extractAllClaims(String token) {
-		if (StringUtils.isEmpty(token))
+		if (token == null || token.isEmpty()) {
 			return null;
+		}
+		
 		String secretKeyEncodeBase64 = Encoders.BASE64.encode(secretKey.getBytes());
 		Claims claims = null;
+		
 		try {
-			claims = Jwts.parserBuilder().setSigningKey(secretKeyEncodeBase64).build().parseClaimsJws(token).getBody();
+			claims = Jwts.parserBuilder()
+					.setSigningKey(secretKeyEncodeBase64)
+					.build()
+					.parseClaimsJws(token)
+					.getBody();
 		} catch (JwtException e) {
 			claims = null;
 		}
+		
 		return claims;
 	}
 
@@ -51,12 +63,12 @@ public class JwtUtil {
 		if (claims == null)
 			return null;
 		else
-			return claims.get("username", String.class);
+			return claims.get("userId", String.class);
 	}
 
 	public String generateToken(Users users) {
 		Map<String, Object> claims = new HashMap<>();
-		claims.put("username", users.getUserid());
+		claims.put("userId", users.getUserid());
 		return createToken(claims);
 	}
 }

@@ -6,12 +6,8 @@ import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -35,35 +31,31 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        //아래 경로는 이 필터가 적용되지 않는다.
         if (path.startsWith("/auth") || path.startsWith("/h2-console")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         final String authorizationHeader = request.getHeader("Authorization");
-        String username = null;
         String token = null;
-        HttpSession session = request.getSession();
 
-        //Header에서 Bearer 부분 이하로 붙은 token을 파싱한다.
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             token = authorizationHeader.substring(7);
         }
-        username = jwtUtil.extractUsername(token);
+        
+        String username = jwtUtil.extractUsername(token);
         if (username == null) {
             exceptionCall(response, "invalidToken");
             return;
         }
-        UserDetails userDetails = userDetailService.loadUserByUsername(username);
-        if (SecurityContextHolder.getContext().getAuthentication() == null) {
-            UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken
-                    = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-            usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
-            session.setAttribute("userid", username);
+        
+        try {
+        	userDetailService.loadUserByUsername(username);
+        } catch (UsernameNotFoundException e) {
+        	exceptionCall(response, "invalidToken");
+            return;
         }
-
+        
         filterChain.doFilter(request, response);
     }
 
