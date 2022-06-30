@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 public class MainController {
 
 	private final PlateNumberService plateNumberService;
-
+	 
 	@RequestMapping(value = "/main", method = { RequestMethod.GET, RequestMethod.POST })
 	public String home(Model model) {
 		List<Plateinfo> plateNumberList = this.plateNumberService.getList();
@@ -32,16 +32,7 @@ public class MainController {
 	@ResponseBody
 	@RequestMapping(value = "/vehicle", method = RequestMethod.POST)
 	public Plateinfo getResultJSON(@RequestBody Map<String, Object> recvInfo, Model model) {
-		List<Plateinfo> result = this.plateNumberService.getQueryForPlateNumJSON(recvInfo.get("licensenumber").toString());
+		List<Plateinfo> result = this.plateNumberService.getQueryForPlateNumJSON(recvInfo.get("plateNum").toString());
 		return result.get(0);
 	}
-
-//	@ResponseBody
-//	@RequestMapping(value = "/test", method = RequestMethod.POST)
-//	public String getResult(@RequestBody Map<String, Object> recvInfo, Model model) {
-//		String result = this.plateNumberService.getQueryForPlateNum(recvInfo.get("licensenumber").toString());
-//		model.addAttribute("RESULT", result);
-//		return result;
-//	}
-
 }

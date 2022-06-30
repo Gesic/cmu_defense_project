@@ -16,6 +16,7 @@ import com.defense.server.jwt.util.JwtUtil;
 import com.defense.server.jwt.util.ResultCode;
 import com.defense.server.jwt.util.ResultJson;
 import com.defense.server.login.loginService;
+import com.defense.server.login.loginConfig;
 import com.defense.server.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class loginController {
 
 	// 2nd Authentication - email-authentication(Link)
     private final loginService loginService;
+    private final loginConfig loginConfig;
     /*
      * JSON format
      * {
@@ -61,8 +63,15 @@ public class loginController {
 			// Create User/Car DB, if DB is empty.
 			if (userRepository.count() == 0)
 			{
-				loginService.createUserDB();
-				loginService.createPlateInfoDB();
+				String result = null;
+				result = loginConfig.createUserDB();
+				if (result.equals("Fail")) {
+					throw new Exception("Fail to Create User DB");
+				}
+				result = loginConfig.createPlateInfoDB();
+				if (result.equals("Fail")) {
+					throw new Exception("Fail to Create PlateInfo DB");
+				}
 			}
 
 			userInfo = userRepository.findUserByUserid(userid.toString());
