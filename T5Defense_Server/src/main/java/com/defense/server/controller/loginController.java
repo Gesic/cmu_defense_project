@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,6 +37,36 @@ public class loginController {
 	// 2nd Authentication - email-authentication(Link)
     private final loginService loginService;
     private final loginConfig loginConfig;
+    
+    // test code
+    @ResponseBody
+    @PostMapping("/bcryptPassword")
+    public ResultJson bcryptPassword(@RequestBody Map<String, Object> recvInfo) {
+    	ResultJson resultJson = new ResultJson();
+    	
+    	try {
+    		if (recvInfo == null) {
+				throw new Exception("Invalid arguments");
+			}
+    		
+			Object password = recvInfo.get("password");
+			if (password == null) {
+				throw new Exception("Invalid arguments");
+			}
+    		
+			BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+			String encodedPassword = encoder.encode(password.toString());
+			
+    		resultJson.setCode(ResultCode.SUCCESS.getCode());
+			resultJson.setMsg(encodedPassword);
+    	} catch (Exception e) {
+			resultJson.setCode(ResultCode.LOGIN_FAIL.getCode());
+			resultJson.setMsg(ResultCode.LOGIN_FAIL.getMsg() + " Reason: " + e.getMessage());
+		}
+		
+		return resultJson;
+    }
+    
     /*
      * JSON format
      * {
@@ -61,8 +92,7 @@ public class loginController {
 			}
 			
 			// Create User/Car DB, if DB is empty.
-			if (userRepository.count() == 0)
-			{
+			if (userRepository.count() == 0) {
 				String result = null;
 				result = loginConfig.createUserDB();
 				if (result.equals("Fail")) {
@@ -79,12 +109,12 @@ public class loginController {
 				throw new Exception("The user does not exist");
 			}
 
-			if(userInfo.getFailcount() == PW_FAIL_COUNT)
-			{
+			if (userInfo.getFailcount() >= PW_FAIL_COUNT) {
 				throw new Exception("Please contact administrator");
 			}
 
-			if (!password.toString().equals(userInfo.getPassword())) {
+			BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+			if (!encoder.matches(password.toString(), userInfo.getPassword())) {
 				userInfo.setFailcount(userInfo.getFailcount() + 1);
 				userRepository.save(userInfo);
 				throw new Exception("Invalid password, Fail Count:" + userInfo.getFailcount());
@@ -102,7 +132,7 @@ public class loginController {
 		return resultJson;
 	}
 	
-    public String sendMail(Users user) {
+    private String sendMail(Users user) {
     	String result;
     	
 		// Reset fail counts of password
