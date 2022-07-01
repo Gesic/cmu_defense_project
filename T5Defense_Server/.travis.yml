@@ -5,3 +5,15 @@ jdk:
 branches:
   only:
     - travis
+
+cache:
+	directories:
+		- '$HOME/.m2/repository'
+		- '$HOME/.gradle'
+
+script: "./gradlew clean build"
+
+notifications:
+	email:
+		recipients:
+			- gesic84@gmail.com
