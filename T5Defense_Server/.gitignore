@@ -38,5 +38,5 @@ out/
 
 ### DB & LOG ###
 local.trace.db
-local.mv.db
+#local.mv.db
 SERVER_LOG*

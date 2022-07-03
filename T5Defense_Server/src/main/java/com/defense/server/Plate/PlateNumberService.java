@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.defense.server.entity.Plateinfo;
-import com.defense.server.login.loginConfig;
+import com.defense.server.login.LoginConfig;
 import com.defense.server.repository.PlateRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 public class PlateNumberService {
 
-	private final loginConfig loginConfig;
+	private final LoginConfig loginConfig;
 	@Autowired
 	private final PlateRepository plateRepository;
 

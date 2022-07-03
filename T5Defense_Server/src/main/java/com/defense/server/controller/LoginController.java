@@ -16,8 +16,8 @@ import com.defense.server.entity.Users;
 import com.defense.server.jwt.util.JwtUtil;
 import com.defense.server.jwt.util.ResultCode;
 import com.defense.server.jwt.util.ResultJson;
-import com.defense.server.login.loginService;
-import com.defense.server.login.loginConfig;
+import com.defense.server.login.LoginConfig;
+import com.defense.server.login.LoginService;
 import com.defense.server.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
-public class loginController {
+public class LoginController {
 	private final int PW_FAIL_COUNT = 5;
 	private final long OTP_TIMEOUT_SEC = 60 * 10;
 	private final String OTP_STATUS_START = "start";
@@ -34,14 +34,21 @@ public class loginController {
 	private final UserRepository userRepository;
 	private final JwtUtil jwtUtil;
 
-	// 2nd Authentication - email-authentication(Link)
-    private final loginService loginService;
-    private final loginConfig loginConfig;
+    private final LoginService loginService;
+    private final LoginConfig loginConfig;
+    private final BCryptPasswordEncoder bcryptEncoder = new BCryptPasswordEncoder();
     
-    // test code
+    /*
+     * !!!  C A U T I O N  !!!
+     * This function is only added to help set the environment for Team 1.
+     * In the real environment, this code does not exist,
+     * and it is assumed that users are pre-registered in the DB.
+     * Therefore, do not assume this code to be a vulnerability.
+     * */
+    /*
     @ResponseBody
-    @PostMapping("/bcryptPassword")
-    public ResultJson bcryptPassword(@RequestBody Map<String, Object> recvInfo) {
+    @PostMapping("/signup")
+    public ResultJson signUp(@RequestBody Map<String, Object> recvInfo) {
     	ResultJson resultJson = new ResultJson();
     	
     	try {
@@ -49,36 +56,41 @@ public class loginController {
 				throw new Exception("Invalid arguments");
 			}
     		
+    		Object userid = recvInfo.get("userid");
 			Object password = recvInfo.get("password");
-			if (password == null) {
+			Object email = recvInfo.get("email");
+			if (userid == null || password == null || email == null) {
 				throw new Exception("Invalid arguments");
 			}
-    		
-			BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-			String encodedPassword = encoder.encode(password.toString());
 			
-    		resultJson.setCode(ResultCode.SUCCESS.getCode());
-			resultJson.setMsg(encodedPassword);
+			Users user = userRepository.findUserByUserid(userid.toString());
+			if (user != null) {
+				throw new Exception("The user already exist");
+			}
+			
+			user = new Users();
+			user.setUserid(userid.toString());
+			user.setPassword(bcryptEncoder.encode(password.toString()));
+			user.setEmail(loginConfig.encrypt(email.toString()));
+			userRepository.save(user);
+			
+			resultJson.setCode(ResultCode.SUCCESS.getCode());
+			resultJson.setMsg(ResultCode.SUCCESS.getMsg());
+			resultJson.setToken("");
     	} catch (Exception e) {
-			resultJson.setCode(ResultCode.LOGIN_FAIL.getCode());
-			resultJson.setMsg(ResultCode.LOGIN_FAIL.getMsg() + " Reason: " + e.getMessage());
-		}
-		
-		return resultJson;
+    		resultJson.setCode(ResultCode.SERVER_ERROR.getCode());
+			resultJson.setMsg(ResultCode.SERVER_ERROR.getMsg() + " Reason: " + e.getMessage());
+			resultJson.setToken("");
+    	}
+    	
+    	return resultJson;
     }
+    */
     
-    /*
-     * JSON format
-     * {
-     *     "userid":"ID",
-     *     "password":"123456"
-     * }
-     * */
 	@ResponseBody
 	@PostMapping("/login")
 	public ResultJson login(@RequestBody Map<String, Object> recvInfo) {
 		ResultJson resultJson = new ResultJson();
-		Users userInfo;
 		
 		try {
 			if (recvInfo == null) {
@@ -91,79 +103,58 @@ public class loginController {
 				throw new Exception("Invalid arguments");
 			}
 			
-			// Create User/Car DB, if DB is empty.
-			if (userRepository.count() == 0) {
-				String result = null;
-				result = loginConfig.createUserDB();
-				if (result.equals("Fail")) {
-					throw new Exception("Fail to Create User DB");
-				}
-				result = loginConfig.createPlateInfoDB();
-				if (result.equals("Fail")) {
-					throw new Exception("Fail to Create PlateInfo DB");
-				}
-			}
-
-			userInfo = userRepository.findUserByUserid(userid.toString());
-			if (userInfo == null) {
+			Users user = userRepository.findUserByUserid(userid.toString());
+			if (user == null) {
 				throw new Exception("The user does not exist");
 			}
 
-			if (userInfo.getFailcount() >= PW_FAIL_COUNT) {
+			if (user.getFailcount() >= PW_FAIL_COUNT) {
 				throw new Exception("Please contact administrator");
 			}
 
-			BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-			if (!encoder.matches(password.toString(), userInfo.getPassword())) {
-				userInfo.setFailcount(userInfo.getFailcount() + 1);
-				userRepository.save(userInfo);
-				throw new Exception("Invalid password, Fail Count:" + userInfo.getFailcount());
+			if (!bcryptEncoder.matches(password.toString(), user.getPassword())) {
+				user.setFailcount(user.getFailcount() + 1);
+				userRepository.save(user);
+				throw new Exception("Invalid password, Fail Count:" + user.getFailcount());
 			}
-
-			sendMail(userInfo);
+			
+			user.setFailcount(0);
+			sendMail(user);
 
 			resultJson.setCode(ResultCode.SUCCESS.getCode());
 			resultJson.setMsg(ResultCode.SUCCESS.getMsg());
+			resultJson.setToken("");
 		} catch (Exception e) {
 			resultJson.setCode(ResultCode.LOGIN_FAIL.getCode());
 			resultJson.setMsg(ResultCode.LOGIN_FAIL.getMsg() + " Reason: " + e.getMessage());
+			resultJson.setToken("");
 		}
 		
 		return resultJson;
 	}
 	
-    private String sendMail(Users user) {
-    	String result;
+    private String sendMail(Users user) throws Exception {
+    	if (user == null) {
+    		throw new Exception("Invalid arguments");
+    	}
     	
-		// Reset fail counts of password
-		user.setFailcount(0);
-
-    	// create OTP key (6 digit)
-    	int otpKey = ThreadLocalRandom.current().nextInt(100000, 1000000);
-    	user.setOtpKey(otpKey);
-
-    	// Current time for OTP Timeout
-    	LocalDateTime now = LocalDateTime.now();
-    	user.setRegDate(now);
+    	final String email = loginConfig.decrypt(user.getEmail());
+    	final int otpKey = ThreadLocalRandom.current().nextInt(100000, 1000000);
+    	final String encodedOtpKey = bcryptEncoder.encode(Integer.toString(otpKey));
+    	
+    	user.setOtpKey(encodedOtpKey);
+    	user.setRegDate(LocalDateTime.now());
     	user.setCheck2ndauth(OTP_STATUS_START);
     	userRepository.save(user);
     	
-        result = loginService.sendOtpMail(user.getEmail(), otpKey);
-        return result;
+        return loginService.sendOtpMail(email, otpKey);
     }
-
-    /*
-     * JSON format
-     * {
-     *     "userid":"ID",
-     *     "otpKey":"123456"
-     * }
-     * */
+    
     @ResponseBody
     @PostMapping("/otp-check")
     public ResultJson signUpConfirm(@RequestBody Map<String, Object> recvInfo) {
     	ResultJson resultJson = new ResultJson();
-    	Users userInfo;
+    	Users user;
     	try {
 			if (recvInfo == null) {
 				throw new Exception("Invalid arguments");
@@ -175,33 +166,33 @@ public class loginController {
 				throw new Exception("Invalid arguments");
 			}
 			
-			userInfo = userRepository.findUserByUserid(userid.toString());
-			if (userInfo == null) {
+			user = userRepository.findUserByUserid(userid.toString());
+			if (user == null) {
 				throw new Exception("The user does not exist");
 			}
 			
-			String otpStatus = userInfo.getCheck2ndauth();
+			String otpStatus = user.getCheck2ndauth();
 			if (!otpStatus.equals(OTP_STATUS_START)) {
 				throw new Exception("OTP session terminated");
 			}
 			
-	    	Duration duration = Duration.between(userInfo.getRegDate(), LocalDateTime.now());
+	    	Duration duration = Duration.between(user.getRegDate(), LocalDateTime.now());
 	    	if (duration.getSeconds() > OTP_TIMEOUT_SEC) {
-	    		userInfo.setCheck2ndauth(OTP_STATUS_FINISHED);
-	    		userRepository.save(userInfo);
+	    		user.setCheck2ndauth(OTP_STATUS_FINISHED);
+	    		userRepository.save(user);
 	    		throw new Exception("OTP session terminated");
 	    	}
 	    	
-	    	if (userInfo.getOtpKey() != Integer.parseInt(otpKey.toString())) {
-	    		userInfo.setCheck2ndauth(OTP_STATUS_FINISHED);
-	    		userRepository.save(userInfo);
+	    	if (!bcryptEncoder.matches(otpKey.toString(), user.getOtpKey())) {
+	    		user.setCheck2ndauth(OTP_STATUS_FINISHED);
+	    		userRepository.save(user);
 	    		throw new Exception("Invalid OTP");
 	    	}
 	    	
-	    	userInfo.setCheck2ndauth(OTP_STATUS_FINISHED);
-    		userRepository.save(userInfo);
+	    	user.setCheck2ndauth(OTP_STATUS_FINISHED);
+    		userRepository.save(user);
     		
-    		String token = jwtUtil.generateToken(userInfo);
+    		String token = jwtUtil.generateToken(user);
     		
     		resultJson.setCode(ResultCode.SUCCESS.getCode());
     		resultJson.setMsg(ResultCode.SUCCESS.getMsg());
