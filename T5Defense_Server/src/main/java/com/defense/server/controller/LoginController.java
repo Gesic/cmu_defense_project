@@ -184,8 +184,6 @@ public class LoginController {
 	    	}
 	    	
 	    	if (!bcryptEncoder.matches(otpKey.toString(), user.getOtpKey())) {
-	    		user.setCheck2ndauth(OTP_STATUS_FINISHED);
-	    		userRepository.save(user);
 	    		throw new Exception("Invalid OTP");
 	    	}
 	    	
