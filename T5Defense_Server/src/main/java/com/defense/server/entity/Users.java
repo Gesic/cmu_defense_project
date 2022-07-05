@@ -34,8 +34,8 @@ public class Users {
 	@Column(name = "email", length = 50, nullable = true)
 	private String email;
 
-	@Column(name = "otpKey", length = 10, nullable = true)
-	public int otpKey;
+	@Column(name = "otpKey", length = 100, nullable = true)
+	public String otpKey;
 
 	@Column(name = "check2ndauth", length = 20, nullable = true)
 	private String check2ndauth;

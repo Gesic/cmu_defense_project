@@ -22,8 +22,6 @@ public class JwtUtil {
 	@Value("${jwt.secret-key}")
 	private String secretKey;
 	
-	private final long TOKEN_VALID_TIME_MILLIS = 1000L * 60 * 60 * 24;
-
 	private String createToken(Map<String, Object> claims) {
 		String secretKeyEncodeBase64 = Encoders.BASE64.encode(secretKey.getBytes());
 		byte[] keyBytes = Decoders.BASE64.decode(secretKeyEncodeBase64);
@@ -33,7 +31,6 @@ public class JwtUtil {
 				.signWith(key)
 				.setClaims(claims)
 				.setIssuedAt(new Date(System.currentTimeMillis()))
-				.setExpiration(new Date(System.currentTimeMillis() + TOKEN_VALID_TIME_MILLIS))
 				.compact();
 	}
 

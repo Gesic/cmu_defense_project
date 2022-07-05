@@ -8,10 +8,10 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Service
-public class loginService {
+public class LoginService {
     private JavaMailSender javaMailSender;
 
-    public loginService(JavaMailSender javaMailSender)
+    public LoginService(JavaMailSender javaMailSender)
     {
 		this.javaMailSender = javaMailSender;
     }

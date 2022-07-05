@@ -26,7 +26,7 @@ public class MainController {
 	public String home(Model model) {
 		List<Plateinfo> plateNumberList = this.plateNumberService.getList();
 		model.addAttribute("plateNumberList", plateNumberList);
-		return "db"; // html file
+		return "db";
 	}
 
 	@ResponseBody

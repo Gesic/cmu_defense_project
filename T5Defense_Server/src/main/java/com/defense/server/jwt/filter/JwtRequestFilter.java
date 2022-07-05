@@ -14,7 +14,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import com.defense.server.jwt.util.JwtUtil;
 import com.defense.server.jwt.util.ResultCode;
 import com.defense.server.jwt.util.ResultJson;
-import com.defense.server.security.UserDetailService;
+import com.defense.server.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class JwtRequestFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
-    private final UserDetailService userDetailService;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -50,7 +50,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         }
         
         try {
-        	userDetailService.loadUserByUsername(username);
+        	userRepository.findUserByUserid(username);
         } catch (UsernameNotFoundException e) {
         	exceptionCall(response, "invalidToken");
             return;
