@@ -44,3 +44,20 @@ JWT / JPA (2.7.0) / H2DB (2.1.212)
 4. Select workspace > Project(T5Defense_Server)
 5. apply and run
 6. check the path "T5Defense_Server\build\libs" in the project root path
+
+########## How to add a test account to the DB#########
+The main DB file name of the server is <project>/T5Defense_Server/local.mv.db
+In the given DB file, license information identified by plate number and 1 user account are set by default. In our project, there is no sign-up process and it is assumed that the users to be authenticated are registered in advance. If you want to create a test account and see how it works, you need to proceed as follows.
+1. open file  <project>/T5Defense_Server/src/main/java/com/defense/server/controller/LoginController.java
+2. There is a signUp() method commented out. Uncomment it.
+3. Rebuild and launch the server
+4. Send http POST request to the server
+http request body example:
+{
+    "userid":"your id",
+    "password":"your password",
+    "email":"your email"
+}
+5. If registration is successful, code 200 is returned in response.
+
+The signUp() method is only added to help set the environment for Team 1. In the real environment, this code does not exist, and it is assumed that users are pre-registered in the DB. Therefore, DO NOT ASSUME THIS CODE TO BE A VULNERABILITY.
