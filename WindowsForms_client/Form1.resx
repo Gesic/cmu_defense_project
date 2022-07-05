@@ -274,16 +274,34 @@
     <value>Ctrl+S</value>
   </data>
   <data name="saveToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>155, 22</value>
+    <value>181, 22</value>
   </data>
   <data name="saveToolStripMenuItem.Text" xml:space="preserve">
     <value>Save</value>
+  </data>
+  <data name="saveWithEncryptToolStripMenuItem.ShortcutKeys" type="System.Windows.Forms.Keys, System.Windows.Forms">
+    <value>Ctrl+E</value>
+  </data>
+  <data name="saveWithEncryptToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>181, 22</value>
+  </data>
+  <data name="saveWithEncryptToolStripMenuItem.Text" xml:space="preserve">
+    <value>File Encrypt</value>
+  </data>
+  <data name="decryptToolStripMenuItem.ShortcutKeys" type="System.Windows.Forms.Keys, System.Windows.Forms">
+    <value>Ctrl+D</value>
+  </data>
+  <data name="decryptToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>181, 22</value>
+  </data>
+  <data name="decryptToolStripMenuItem.Text" xml:space="preserve">
+    <value>File Decrypt</value>
   </data>
   <data name="logoutToolStripMenuItem.ShortcutKeys" type="System.Windows.Forms.Keys, System.Windows.Forms">
     <value>Ctrl+Q</value>
   </data>
   <data name="logoutToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>155, 22</value>
+    <value>181, 22</value>
   </data>
   <data name="logoutToolStripMenuItem.Text" xml:space="preserve">
     <value>Logout</value>
@@ -679,6 +697,33 @@
   <data name="panel1.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
     <value>Center</value>
   </data>
+  <data name="panel2.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
+    <value>Center</value>
+  </data>
+  <data name="panel2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="panel2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>750, 546</value>
+  </data>
+  <data name="panel2.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="panel2.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;panel2.Name" xml:space="preserve">
+    <value>panel2</value>
+  </data>
+  <data name="&gt;&gt;panel2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;panel2.Parent" xml:space="preserve">
+    <value>panel1</value>
+  </data>
+  <data name="&gt;&gt;panel2.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
   <data name="label4.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
@@ -704,7 +749,7 @@
     <value>panel1</value>
   </data>
   <data name="&gt;&gt;label4.ZOrder" xml:space="preserve">
-    <value>0</value>
+    <value>1</value>
   </data>
   <data name="progressBar1.Location" type="System.Drawing.Point, System.Drawing">
     <value>149, 53</value>
@@ -725,7 +770,7 @@
     <value>panel1</value>
   </data>
   <data name="&gt;&gt;progressBar1.ZOrder" xml:space="preserve">
-    <value>1</value>
+    <value>2</value>
   </data>
   <data name="panel1.Location" type="System.Drawing.Point, System.Drawing">
     <value>322, 27</value>
@@ -1998,6 +2043,18 @@
     <value>saveToolStripMenuItem</value>
   </data>
   <data name="&gt;&gt;saveToolStripMenuItem.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;saveWithEncryptToolStripMenuItem.Name" xml:space="preserve">
+    <value>saveWithEncryptToolStripMenuItem</value>
+  </data>
+  <data name="&gt;&gt;saveWithEncryptToolStripMenuItem.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;decryptToolStripMenuItem.Name" xml:space="preserve">
+    <value>decryptToolStripMenuItem</value>
+  </data>
+  <data name="&gt;&gt;decryptToolStripMenuItem.Type" xml:space="preserve">
     <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;logoutToolStripMenuItem.Name" xml:space="preserve">
