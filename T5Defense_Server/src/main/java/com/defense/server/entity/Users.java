@@ -1,7 +1,5 @@
 package com.defense.server.entity;
 
-import java.time.LocalDateTime;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -28,17 +26,11 @@ public class Users {
 	@Column(name = "password", length = 100, nullable = true)
 	private String password;
 
-	@Column(name = "regdate")
-	private LocalDateTime regDate;
-
 	@Column(name = "email", length = 50, nullable = true)
 	private String email;
 
-	@Column(name = "otpKey", length = 100, nullable = true)
+	@Column(name = "otpKey", length = 200, nullable = true)
 	public String otpKey;
-
-	@Column(name = "check2ndauth", length = 20, nullable = true)
-	private String check2ndauth;
 
 	@Column(name = "failcount", length = 10, nullable = true)
 	private int failcount;

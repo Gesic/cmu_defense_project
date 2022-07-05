@@ -1,10 +1,10 @@
 package com.defense.server.controller;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.json.JSONObject;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,16 +20,16 @@ import com.defense.server.login.LoginConfig;
 import com.defense.server.login.LoginService;
 import com.defense.server.repository.UserRepository;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class LoginController {
 	private final int PW_FAIL_COUNT = 5;
-	private final long OTP_TIMEOUT_SEC = 60 * 10;
-	private final String OTP_STATUS_START = "start";
-	private final String OTP_STATUS_FINISHED = "finished";
+	private final long OTP_TIMEOUT_SEC = 60 * 2;
 	
 	private final UserRepository userRepository;
 	private final JwtUtil jwtUtil;
@@ -37,6 +37,36 @@ public class LoginController {
     private final LoginService loginService;
     private final LoginConfig loginConfig;
     private final BCryptPasswordEncoder bcryptEncoder = new BCryptPasswordEncoder();
+    
+    @Getter
+    @Setter
+    private class OtpKey {
+    	private final String KEY_OTP = "otp";
+    	private final String KEY_EXPIRATION = "expiration";
+    	
+    	private int otp;
+    	private LocalDateTime expiration;
+    	
+    	public OtpKey(int otp, LocalDateTime expiration) {
+    		this.otp = otp;
+    		this.expiration = expiration;
+    	}
+    	
+    	public OtpKey(String jsonString) throws Exception {
+    		JSONObject jsonObject = new JSONObject(jsonString);
+    		otp = jsonObject.getInt(KEY_OTP);
+    		expiration = LocalDateTime.parse(jsonObject.getString(KEY_EXPIRATION));
+    	}
+    	
+    	@Override
+    	public String toString() {
+    		JSONObject jsonObject = new JSONObject();
+    		jsonObject.put(KEY_OTP, otp);
+    		jsonObject.put(KEY_EXPIRATION, expiration);
+    		
+    		return jsonObject.toString();
+    	}
+    }
     
     /*
      * !!!  C A U T I O N  !!!
@@ -139,20 +169,20 @@ public class LoginController {
     	}
     	
     	final String email = loginConfig.decrypt(user.getEmail());
-    	final int otpKey = ThreadLocalRandom.current().nextInt(100000, 1000000);
-    	final String encodedOtpKey = bcryptEncoder.encode(Integer.toString(otpKey));
+    	final int otp = ThreadLocalRandom.current().nextInt(100000, 1000000);
     	
-    	user.setOtpKey(encodedOtpKey);
-    	user.setRegDate(LocalDateTime.now());
-    	user.setCheck2ndauth(OTP_STATUS_START);
+    	OtpKey otpKey = new OtpKey(otp, LocalDateTime.now().plusSeconds(OTP_TIMEOUT_SEC));
+    	
+    	final String encryptedOtpKey = loginConfig.encrypt(otpKey.toString());
+    	user.setOtpKey(encryptedOtpKey);
     	userRepository.save(user);
     	
-        return loginService.sendOtpMail(email, otpKey);
+        return loginService.sendOtpMail(email, otp);
     }
     
     @ResponseBody
     @PostMapping("/otp-check")
-    public ResultJson signUpConfirm(@RequestBody Map<String, Object> recvInfo) {
+    public ResultJson checkOtp(@RequestBody Map<String, Object> recvInfo) {
     	ResultJson resultJson = new ResultJson();
     	Users user;
     	try {
@@ -160,36 +190,36 @@ public class LoginController {
 				throw new Exception("Invalid arguments");
 			}
 			
-			Object userid = recvInfo.get("userid");
-			Object otpKey = recvInfo.get("otpKey");
-			if (userid == null || otpKey == null) {
+			Object receivedUserid = recvInfo.get("userid");
+			Object receivedOtp = recvInfo.get("otp");
+			if (receivedUserid == null || receivedOtp == null) {
 				throw new Exception("Invalid arguments");
 			}
 			
-			user = userRepository.findUserByUserid(userid.toString());
+			user = userRepository.findUserByUserid(receivedUserid.toString());
 			if (user == null) {
 				throw new Exception("The user does not exist");
 			}
 			
-			String otpStatus = user.getCheck2ndauth();
-			if (!otpStatus.equals(OTP_STATUS_START)) {
+			if (user.getOtpKey() == null) {
 				throw new Exception("OTP session terminated");
 			}
 			
-	    	Duration duration = Duration.between(user.getRegDate(), LocalDateTime.now());
-	    	if (duration.getSeconds() > OTP_TIMEOUT_SEC) {
-	    		user.setCheck2ndauth(OTP_STATUS_FINISHED);
-	    		userRepository.save(user);
-	    		throw new Exception("OTP session terminated");
-	    	}
+			String otpKeyString = loginConfig.decrypt(user.getOtpKey());
+			OtpKey otpKey = new OtpKey(otpKeyString);
+			if (otpKey.getExpiration().isBefore(LocalDateTime.now())) {
+				user.setOtpKey(null);
+				userRepository.save(user);
+				throw new Exception("OTP session expired");
+			}
+			
+			if (!receivedOtp.toString().equals(Integer.toString(otpKey.getOtp()))) {
+				throw new Exception("Invalid OTP");
+			}
+			
+			user.setOtpKey(null);
+			userRepository.save(user);
 	    	
-	    	if (!bcryptEncoder.matches(otpKey.toString(), user.getOtpKey())) {
-	    		throw new Exception("Invalid OTP");
-	    	}
-	    	
-	    	user.setCheck2ndauth(OTP_STATUS_FINISHED);
-    		userRepository.save(user);
-    		
     		String token = jwtUtil.generateToken(user);
     		
     		resultJson.setCode(ResultCode.SUCCESS.getCode());
