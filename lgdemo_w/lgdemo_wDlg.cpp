@@ -178,34 +178,33 @@ std::wstring ExePath() {
 HANDLE createdNamedPipe()
 {
     HANDLE hPipe = nullptr;
-    // Prepare the pipe name
     CString strPipeName;
     strPipeName.Format(_T("\\\\%s\\pipe\\%s"),
-        _T("."),			// Server name
-        _T("IPC_DATA_CHANNEL")	// Pipe name
+        _T(".")
+        _T("IPC_DATA_CHANNEL")	
     );
 
 
     while (TRUE)
     {
         hPipe = CreateFile(
-            strPipeName,			// Pipe name 
-            GENERIC_READ |			// Read and wrirte access 
+            strPipeName,			
+            GENERIC_READ |			
             GENERIC_WRITE,
-            0,						// No sharing 
-            NULL,					// Default security attributes
-            OPEN_EXISTING,			// Opens existing pipe 
-            0,						// Default attributes 
-            NULL);					// No template file 
+            0,						
+            NULL,					
+            OPEN_EXISTING,			
+            0,						
+            NULL);					
 
-        // Break if the pipe handle is valid. 
+       
         if (hPipe != INVALID_HANDLE_VALUE)
             break;
 
-        if (// Exit if an error other than ERROR_PIPE_BUSY occurs
+        if (
             GetLastError() != ERROR_PIPE_BUSY
             ||
-            // All pipe instances are busy, so wait for 5 seconds
+          
             !WaitNamedPipe(strPipeName, 5000))
         {
             _tprintf(_T("Unable to open named pipe %s w/err 0x%08lx\n"),
@@ -220,8 +219,7 @@ HANDLE createdNamedPipe()
 }
 bool writeMessage(HANDLE hPipe, CString temp)
 {
-    // Set data to be read from the pipe as a stream of messages
-    DWORD dwMode = PIPE_READMODE_MESSAGE;
+       DWORD dwMode = PIPE_READMODE_MESSAGE;
     BOOL bResult = SetNamedPipeHandleState(hPipe, &dwMode, NULL, NULL);
     if (!bResult)
     {
@@ -229,33 +227,24 @@ bool writeMessage(HANDLE hPipe, CString temp)
             GetLastError());
         return 1;
     }
-
-    /////////////////////////////////////////////////////////////////////////
-   // Send a message to the pipe server and receive its response.
-   // 
-
-   // A char buffer of BUFFER_SIZE chars, aka BUFFER_SIZE * sizeof(TCHAR) 
-   // bytes. The buffer should be big enough for ONE request to the server.
-
-    TCHAR chRequest[BUFFER_SIZE];	// Client -> Server
+       
+    TCHAR chRequest[BUFFER_SIZE];	
     DWORD cbBytesWritten, cbRequestBytes;
-    TCHAR chReply[BUFFER_SIZE];		// Server -> Client
+    TCHAR chReply[BUFFER_SIZE];		
     DWORD cbBytesRead, cbReplyBytes;
-
 
     // Send one message to the pipe.
     StringCchCopy(chRequest, BUFFER_SIZE, temp);
     cbRequestBytes = sizeof(TCHAR) * (lstrlen(chRequest) + 1);
 
-    bResult = WriteFile(			// Write to the pipe.
-        hPipe,						// Handle of the pipe
-        chRequest,					// Message to be written
-        cbRequestBytes,				// Number of bytes to write
-        &cbBytesWritten,			// Number of bytes written
-        NULL);						// Not overlapped 
+    bResult = WriteFile(			
+        hPipe,						
+        chRequest,					
+        cbRequestBytes,				
+        &cbBytesWritten,		
+        NULL);						
 
-    if (!bResult/*Failed*/ || cbRequestBytes != cbBytesWritten/*Failed*/)
-
+    if (!bResult || cbRequestBytes != cbBytesWritten)
     {
         _tprintf(_T("WriteFile failed w/err 0x%08lx\n"), GetLastError());
         return 1;
@@ -269,11 +258,8 @@ void executeProgram(CString fileName, bool bWait = FALSE)
 {
     TCHAR programpath[_MAX_PATH];
     wstring temp = ExePath();
-    /* GetModuleFileName(NULL, programpath, _MAX_PATH);
-     GetCurrentDirectory(_MAX_PATH, programpath);*/
-    const wchar_t* wcs = temp.c_str();
+   const wchar_t* wcs = temp.c_str();
 
-    //ShellExecute(NULL, _T("open"), _T("server.exe"), NULL, NULL, SW_SHOW);
     SHELLEXECUTEINFO ShExecInfo = { 0 };
     ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
     ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
@@ -290,15 +276,12 @@ void executeProgram(CString fileName, bool bWait = FALSE)
         WaitForSingleObject(ShExecInfo.hProcess, 2000);
         CloseHandle(ShExecInfo.hProcess);
     }
-
 }
 void ClgdemowDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 
 	DDX_Control(pDX, IDC_PIC, m_PIC);
-	
-	
 	DDX_Control(pDX, IDC_BUTTON3, Btn_playback);
 	DDX_Control(pDX, IDC_BUTTON2, Btn_LiveCam);
 
@@ -318,7 +301,6 @@ END_MESSAGE_MAP()
 
 
 // ClgdemowDlg 메시지 처리기
-
 BOOL ClgdemowDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -518,10 +500,6 @@ static bool detectandshow(Alpr* alpr, cv::Mat frame, std::string region, bool wr
                     unsigned short SendMsgHdr;
                     SendPlateStringLength = (unsigned short)strlen(results.plates[i].bestPlate.characters.c_str()) + 1;
                     SendMsgHdr = htons(SendPlateStringLength);
-                  /*  if ((result = (int)WriteDataTcp(TcpConnectedPort, (unsigned char*)&SendMsgHdr, sizeof(SendMsgHdr))) != sizeof(SendPlateStringLength))
-                        printf("WriteDataTcp %d\n", result);
-                    if ((result = (int)WriteDataTcp(TcpConnectedPort, (unsigned char*)results.plates[i].bestPlate.characters.c_str(), SendPlateStringLength)) != SendPlateStringLength)
-                        printf("WriteDataTcp %d\n", result);*/
                     printf("sent ->%s\n", results.plates[i].bestPlate.characters.c_str());
                     writeMessage(m_hPipe, GetWC(results.plates[i].bestPlate.characters.c_str()));
                 }
@@ -1269,7 +1247,6 @@ void ClgdemowDlg::OnBnClickedButton_LiveCam()
 
     mode = Mode::mLive_Video;
 	if (mode == Mode::mNone) exit(0);
-
 
 
     deviceID = 0;

@@ -53,8 +53,8 @@ namespace WindowsForms_client
 
         private void TXT_OTPNUM_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (!(char.IsDigit(e.KeyChar) || e.KeyChar == Convert.ToChar(Keys.Back)))
-                e.Handled = true;
+            //if (!(char.IsDigit(e.KeyChar) || e.KeyChar == Convert.ToChar(Keys.Back)))
+            //    e.Handled = true;
             
         }
     }
